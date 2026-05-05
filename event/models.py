@@ -31,7 +31,7 @@ class Event(models.Model):
     max_member= models.IntegerField(blank=True,null=True)
     message_id= models.IntegerField(blank=True,null=True)
     link = models.URLField(blank=True,null=True)
-    photo = models.ImageField(blank=True,null=True)
+    photo = models.ImageField(blank=True,null=True,upload_to="events",default="events/default.png")
 
 class Member(models.Model):
     member = models.ForeignKey(

@@ -54,16 +54,16 @@ def menu(message):
         message: Telegram message object containing chat information
     """
     markup = types.InlineKeyboardMarkup()
-    registered_btn = types.InlineKeyboardButton(text="My events", callback_data="my_events")
-    register_btn = types.InlineKeyboardButton(text="Join Event", callback_data=f"event")
+    registered_btn = types.InlineKeyboardButton(text="Мои тренировки", callback_data="my_events")
+    register_btn = types.InlineKeyboardButton(text="Присоединиться", callback_data=f"event")
     user = CustomUser.objects.get(tg_id=message.chat.id)
 
     markup.row(registered_btn)
     markup.row(register_btn)
     if user.is_staff or user.is_superuser:
-        admin_btn = types.InlineKeyboardButton(text="Admin Panel", callback_data=f"admin")
+        admin_btn = types.InlineKeyboardButton(text="Панель администратора", callback_data=f"admin")
         markup.row(admin_btn)
-    bot.send_message(message.chat.id, "Choose one:", reply_markup=markup)
+    bot.send_message(message.chat.id, "Выберите опцию:", reply_markup=markup)
 
 
 def create_user(message):
@@ -74,21 +74,21 @@ def create_user(message):
 
 	})
     user = CustomUser.objects.get(tg_id=message.chat.id)
-    bot.send_message(message.chat.id, f"You login as {user.first_name}", reply_markup=markup)
+    bot.send_message(message.chat.id, f"Вы вошли как {user.first_name}", reply_markup=markup)
     menu(message)
 
 def start_adding_event(tg_id):
     user_id = tg_id
     user_state[user_id] = "measure"
     user_data[user_id] = {}
-    bot.send_message(user_id, text=f"Enter event measure:")
+    bot.send_message(user_id, text=f"Введите название тренировки:")
 
 def start_editing_event(tg_id,state,event_id):
     user_id = tg_id
     edit_state[user_id] = state
     edit_data[user_id] = {}
     edit_data[user_id]["event_id"] = event_id
-    bot.send_message(user_id, text=f"Enter event measure:")
+    bot.send_message(user_id, text=f"Введите название тренировки:")
 
 @bot.message_handler(func=lambda msg: msg.chat.id in edit_state, content_types=['photo', 'text'])
 def handle_edit_steps(message):
@@ -104,18 +104,18 @@ def handle_edit_steps(message):
     markup = types.InlineKeyboardMarkup()
     if state == "measure":
         edit_data[user_id]["measure"] = message.text.strip()
-        confirm_btn = types.InlineKeyboardButton(text="Confirm", callback_data="finish_edit|measure")
-        cancel_btn = types.InlineKeyboardButton(text="Cancel", callback_data="admin")
+        confirm_btn = types.InlineKeyboardButton(text="Подтвердить", callback_data="finish_edit|measure")
+        cancel_btn = types.InlineKeyboardButton(text="Отменить", callback_data="admin")
         markup.row(confirm_btn)
         markup.row(cancel_btn)
-        bot.send_message(user_id, text="Select:",reply_markup=markup)
+        bot.send_message(user_id, text="Выберите:",reply_markup=markup)
     elif state == "place":
         edit_data[user_id]["place"] = message.text.strip()
-        confirm_btn = types.InlineKeyboardButton(text="Confirm", callback_data="finish_edit|place")
-        cancel_btn = types.InlineKeyboardButton(text="Cancel", callback_data="admin")
+        confirm_btn = types.InlineKeyboardButton(text="Подтвердить", callback_data="finish_edit|place")
+        cancel_btn = types.InlineKeyboardButton(text="Отменить", callback_data="admin")
         markup.row(confirm_btn)
         markup.row(cancel_btn)
-        bot.send_message(user_id, text="Select:", reply_markup=markup)
+        bot.send_message(user_id, text="Выберите:", reply_markup=markup)
     elif state == "link":
         validate = URLValidator()
 
@@ -124,25 +124,25 @@ def handle_edit_steps(message):
         try:
             validate(url)
             edit_data[user_id]["link"] = message.text.strip()
-            confirm_btn = types.InlineKeyboardButton(text="Confirm", callback_data="finish_edit|link")
-            cancel_btn = types.InlineKeyboardButton(text="Cancel", callback_data="admin")
+            confirm_btn = types.InlineKeyboardButton(text="Подтвердить", callback_data="finish_edit|link")
+            cancel_btn = types.InlineKeyboardButton(text="Отменить", callback_data="admin")
             markup.row(confirm_btn)
             markup.row(cancel_btn)
-            bot.send_message(user_id, text="Select:", reply_markup=markup)
+            bot.send_message(user_id, text="Выберите:", reply_markup=markup)
         except ValidationError:
-            bot.send_message(user_id, text="it isn't link paste link:")
+            bot.send_message(user_id, text="Это не ссылка. Вставьте ссылку:")
             edit_state[user_id] = "link"
     elif state == "max_member":
         edit_data[user_id]["max_member"] = message.text.strip()
-        confirm_btn = types.InlineKeyboardButton(text="Confirm", callback_data="finish_edit|max_member")
-        cancel_btn = types.InlineKeyboardButton(text="Cancel", callback_data="admin")
+        confirm_btn = types.InlineKeyboardButton(text="Подтвердить", callback_data="finish_edit|max_member")
+        cancel_btn = types.InlineKeyboardButton(text="Отменить", callback_data="admin")
         markup.row(confirm_btn)
         markup.row(cancel_btn)
-        bot.send_message(user_id, text="Select:", reply_markup=markup)
+        bot.send_message(user_id, text="Выберите:", reply_markup=markup)
     elif state == "date":
         edit_data[user_id]["date"] = message.text.strip()
         edit_state[user_id] = "time"
-        bot.send_message(user_id, text="Write time(08:30):")
+        bot.send_message(user_id, text="Напишите время(08:30):")
     elif state == "time":
         edit_data[user_id]["time"] = message.text.strip()
         info = edit_data[user_id]
@@ -151,11 +151,11 @@ def handle_edit_steps(message):
         edit_data[user_id]["date"] = timezone.make_aware(
             datetime(int(date[2]), int(date[1]), int(date[0]), int(event_time[0]), int(event_time[1])))
         del user_state[user_id]
-        confirm_btn = types.InlineKeyboardButton(text="Confirm", callback_data="finish_edit|date")
-        cancel_btn = types.InlineKeyboardButton(text="Cancel", callback_data="admin")
+        confirm_btn = types.InlineKeyboardButton(text="Подтвердить", callback_data="finish_edit|date")
+        cancel_btn = types.InlineKeyboardButton(text="Отменить", callback_data="admin")
         markup.row(confirm_btn)
         markup.row(cancel_btn)
-        bot.send_message(user_id, text="Select:", reply_markup=markup)
+        bot.send_message(user_id, text="Выберите:", reply_markup=markup)
 
 
 
@@ -174,11 +174,11 @@ def handle_event_steps(message):
     if state == "measure":
         user_data[user_id]["measure"] = message.text.strip()
         user_state[user_id] = "place"
-        bot.send_message(user_id, text="Write place name:")
+        bot.send_message(user_id, text="Напишите название места:")
     elif state == "place":
         user_data[user_id]["place"] = message.text.strip()
         user_state[user_id] = "link"
-        bot.send_message(user_id, text="Paste place link:")
+        bot.send_message(user_id, text="Вставьте ссылку на место:")
     elif state == "link":
         validate = URLValidator()
 
@@ -188,18 +188,18 @@ def handle_event_steps(message):
             validate(url)
             user_data[user_id]["link"] = message.text.strip()
             user_state[user_id] = "max_member"
-            bot.send_message(user_id, text="Write max member number(4):")
+            bot.send_message(user_id, text="Напишите максимальное количество участников(4):")
         except ValidationError:
-            bot.send_message(user_id, text="it isn't link paste link:")
+            bot.send_message(user_id, text="Это не ссылка. Вставьте ссылку:")
             user_state[user_id] = "link"
     elif state == "max_member":
         if int(message.text.strip()) < 4:
-            bot.send_message(user_id, text="Max member can be 4 or more:")
+            bot.send_message(user_id, text="Максимум участников не может быть менее 4:")
             user_state[user_id] = "max_member"
         else:
             user_data[user_id]["max_member"] = message.text.strip()
             user_state[user_id] = "photo"
-            bot.send_message(user_id, text="Write date(21/12/2026):")
+            bot.send_message(user_id, text="Напишите дату(21/12/2026):")
     elif state == "photo":
         file_path = bot.get_file(message.photo[-1].file_id).file_path
         file = bot.download_file(file_path)
@@ -207,11 +207,11 @@ def handle_event_steps(message):
             user_data[user_id]["photo"] = f"products/{message.photo[-1].file_unique_id}.png"
             code.write(file)
         user_state[user_id] = "date"
-        bot.send_message(user_id, text="Write date(21/12/2026):")
+        bot.send_message(user_id, text="Напишите дату(21/12/2026):")
     elif state == "date":
         user_data[user_id]["date"] = message.text.strip()
         user_state[user_id] = "time"
-        bot.send_message(user_id, text="Write time(08:30):")
+        bot.send_message(user_id, text="Напишите время(08:30):")
     elif state == "time":
         user_data[user_id]["time"] = message.text.strip()
         del user_state[user_id]
@@ -219,7 +219,7 @@ def handle_event_steps(message):
         for trainer in CustomUser.objects.filter(is_trainer=True):
             btn = types.InlineKeyboardButton(text=f"{trainer.first_name}", callback_data=f"trainer|{trainer.id}")
             markup.row(btn)
-        bot.send_message(user_id, text="Select trainer:", reply_markup=markup)
+        bot.send_message(user_id, text="Выберите тренера:", reply_markup=markup)
 
 def info_text(event):
     members = "\n".join([str(user.first_name) for user in event.members.all()])
@@ -301,8 +301,6 @@ threading.Thread(
 
 @bot.message_handler(commands=['start'])
 def start(message):
-    event=Event.objects.all()[0]
-    send_event_message(event.id,"new")
     create_user(message)
 
 
@@ -310,29 +308,29 @@ def start(message):
 def callback_handler(call):
     if call.data == "admin":
         markup = types.InlineKeyboardMarkup()
-        add_event_btn = types.InlineKeyboardButton(text=f"Add Event", callback_data="add_event")
-        edit_event_btn = types.InlineKeyboardButton(text=f"Edit Event", callback_data=f"select_event|edit_event")
-        cancel_event_btn = types.InlineKeyboardButton(text=f"Cancel Event", callback_data=f"select_event|cancel_event")
-        back_btn = types.InlineKeyboardButton(text=f"Back", callback_data="menu")
+        add_event_btn = types.InlineKeyboardButton(text=f"Добавить тренировку", callback_data="add_event")
+        edit_event_btn = types.InlineKeyboardButton(text=f"Редактировать тренировку", callback_data=f"select_event|edit_event")
+        cancel_event_btn = types.InlineKeyboardButton(text=f"Отменить тренировку", callback_data=f"select_event|cancel_event")
+        back_btn = types.InlineKeyboardButton(text=f"Назад", callback_data="menu")
         markup.row(add_event_btn)
         markup.row(edit_event_btn)
         markup.row(cancel_event_btn)
         markup.row(back_btn)
-        bot.send_message(call.from_user.id, "Hello!!!", reply_markup=markup)
+        bot.send_message(call.from_user.id, "Привет!!!", reply_markup=markup)
     if call.data == "event":
         markup = types.InlineKeyboardMarkup()
         user=CustomUser.objects.get(tg_id=call.from_user.id)
         for event in Event.objects.exclude(Q(members=user)|Q(reserve=user)):
             if event.members.count() < event.max_member:
-                btn = types.InlineKeyboardButton(text=f"Info Date&Time:{event.date} ({event.members.count()+event.reserve.count()}/{event.max_member})", callback_data=f"info|join|{event.id}")
+                btn = types.InlineKeyboardButton(text=f"Информация Дата&Время:{event.date} ({event.members.count()+event.reserve.count()}/{event.max_member})", callback_data=f"info|join|{event.id}")
             else:
                 btn = types.InlineKeyboardButton(
-                    text=f"Info Date&Time: {event.date} Members: ({event.members.count()+event.reserve.count()}/{event.max_member})",
+                    text=f"Информация Дата&Время: {event.date} Участники: ({event.members.count()+event.reserve.count()}/{event.max_member})",
                     callback_data=f"info|reserve|{event.id}")
             markup.row(btn)
-        back_btn = types.InlineKeyboardButton(text=f"Back",callback_data="menu")
+        back_btn = types.InlineKeyboardButton(text=f"Назад",callback_data="menu")
         markup.row(back_btn)
-        bot.send_message(call.from_user.id, "Choose one:", reply_markup=markup)
+        bot.send_message(call.from_user.id, "Выберите опцию:", reply_markup=markup)
     if call.data == "menu":
         menu(call.message)
     if call.data.split("|")[0] == "join":
@@ -348,16 +346,16 @@ def callback_handler(call):
                     Reserve.objects.create(event=event,reserve=user,pos=event.reserve.count()+1)
                     event.reserve.add(user)
                     bot.delete_message(group_id, event.message_id)
-                    bot.send_message(call.from_user.id, f"В РЕЗЕРВЕ\nНа {event.measure}\n📆Дата: {event.data.day}/{event.data.month}/{event.data.year}\n🕰️Время: {event.date.time}:{event.date.hour}\n📍Локация: <a href='{event.link}'>{event.place}</a>\n👨‍🎓Тренер: {event.trainer.first_name}\nВы записаны в ‼️РЕЗЕРВ‼️\nпри освобождении места на тренировку, Вы автоматически будете добавлены на неё, при этом Вам придёт об этом оповещение 🚨 ", reply_markup=markup,parse_mode="HTML")
+                    bot.send_message(call.from_user.id, f"В РЕЗЕРВЕ\nНа {event.measure}\n📆Дата: {event.date.day}/{event.date.month}/{event.date.year}\n🕰️Время: {event.date.time}:{event.date.hour}\n📍Локация: <a href='{event.link}'>{event.place}</a>\n👨‍🎓Тренер: {event.trainer.first_name}\nВы записаны в ‼️РЕЗЕРВ‼️\nпри освобождении места на тренировку, Вы автоматически будете добавлены на неё, при этом Вам придёт об этом оповещение 🚨 ", reply_markup=markup,parse_mode="HTML")
                 else:
                     event.members.add(user)
-                    bot.send_message(call.from_user.id, f"Вы записаны на {event.measure}\n📆Дата: {event.data.day}/{event.data.month}/{event.data.year}\n🕰️Время: {event.date.time}:{event.date.hour}\n📍Локация: <a href='{event.link}'>{event.place}</a>\n👨‍🎓Тренер: {event.trainer.first_name}\nНе забудьте с собой форму, головной убор и питьевую воду‼️\nДо встречи на корте 🙌", reply_markup=markup,parse_mode="HTML")
+                    bot.send_message(call.from_user.id, f"Вы записаны на {event.measure}\n📆Дата: {event.date.day}/{event.date.month}/{event.date.year}\n🕰️Время: {event.date.time}:{event.date.hour}\n📍Локация: <a href='{event.link}'>{event.place}</a>\n👨‍🎓Тренер: {event.trainer.first_name}\nНе забудьте с собой форму, головной убор и питьевую воду‼️\nДо встречи на корте 🙌", reply_markup=markup,parse_mode="HTML")
                 send_event_message(event.id,"old")
             else:
-                bot.send_message(group_id, f"You already joined in {event.measure}", reply_markup=markup)
+                bot.send_message(group_id, f"Вы уже записаны на {event.measure}", reply_markup=markup)
 
         else:
-            message = bot.send_message(group_id, "You are not registered go to:@beach_ball_club_bot")
+            message = bot.send_message(group_id, "Вы не зарегистрированы, перейдите к:@beach_ball_club_bot")
             time.sleep(10)
             bot.delete_message(group_id, message.message_id)
     if call.data == "my_events":
@@ -366,34 +364,34 @@ def callback_handler(call):
         reserved_events = Event.objects.filter(reserve=user)
         events = Event.objects.filter(members=user)
         for event in events:
-            btn = types.InlineKeyboardButton(text=f"Leave Date&Time:{event.date} ({event.members.count()+event.reserve.count()}/{event.max_member})", callback_data=f"info|leave|{event.id}")
+            btn = types.InlineKeyboardButton(text=f"Выйти Дата&Время:{event.date} ({event.members.count()+event.reserve.count()}/{event.max_member})", callback_data=f"info|leave|{event.id}")
             markup.row(btn)
         for event in reserved_events:
-            btn = types.InlineKeyboardButton(text=f"Cancel Reserve Date&Time:{event.date} ({event.members.count()+event.reserve.count()}/{event.max_member})", callback_data=f"info|leave|{event.id}")
+            btn = types.InlineKeyboardButton(text=f"Отменить резерв Дата&Время:{event.date} ({event.members.count()+event.reserve.count()}/{event.max_member})", callback_data=f"info|leave|{event.id}")
             markup.row(btn)
-        back_btn = types.InlineKeyboardButton(text=f"Back", callback_data="menu")
+        back_btn = types.InlineKeyboardButton(text=f"Назад", callback_data="menu")
         markup.row(back_btn)
-        bot.send_message(call.from_user.id, f"Hello here is your events:", reply_markup=markup)
+        bot.send_message(call.from_user.id, f"Вот ваши тренировки:", reply_markup=markup)
     if call.data.split("|")[0] == "info":
         markup = types.InlineKeyboardMarkup()
         event=Event.objects.get(id=call.data.split("|")[2])
         if call.data.split("|")[1] == "join":
-            btn = types.InlineKeyboardButton(text="Join",callback_data=f"join|join|{event.id}")
+            btn = types.InlineKeyboardButton(text="Присоединиться",callback_data=f"join|join|{event.id}")
             markup.row(btn)
         elif call.data.split("|")[1] == "reserve":
-            btn = types.InlineKeyboardButton(text="Reserve",callback_data=f"join|reserve|{event.id}")
+            btn = types.InlineKeyboardButton(text="Резерв",callback_data=f"join|reserve|{event.id}")
             markup.row(btn)
         else:
-            btn = types.InlineKeyboardButton(text="Leave", callback_data=f"leave|{event.id}")
+            btn = types.InlineKeyboardButton(text="Выйти", callback_data=f"leave|{event.id}")
             markup.row(btn)
-        back_btn = types.InlineKeyboardButton(text=f"Back", callback_data="my_events")
+        back_btn = types.InlineKeyboardButton(text=f"Назад", callback_data="my_events")
         markup.row(back_btn)
         bot.send_message(call.from_user.id, info_text(event), reply_markup=markup,parse_mode="HTML")
     if call.data.split("|")[0] == "leave":
         markup = types.InlineKeyboardMarkup()
         event = Event.objects.get(id=call.data.split("|")[1])
         user = CustomUser.objects.get(tg_id=call.from_user.id)
-        back_btn = types.InlineKeyboardButton(text=f"Back", callback_data="my_events")
+        back_btn = types.InlineKeyboardButton(text=f"Назад", callback_data="my_events")
         markup.row(back_btn)
         if event.members.filter(id=user.id).exists() or event.reserve.filter(id=user.id).exists():
             if event.members.filter(id=user.id).exists():
@@ -402,14 +400,14 @@ def callback_handler(call):
                     reserve_1 = Reserve.objects.get(event=event,pos=1)
                     event.members.add(reserve_1.reserve)
                     event.reserve.remove(reserve_1.reserve)
-                    bot.send_message(reserve_1.reserve.tg_id, f"«Вы добавлены в основу на {event.measure}\n📆Дата: {event.data.day}/{event.data.month}/{event.data.year}\n🕰️Время: {event.date.time}:{event.date.hour}\n📍Локация: <a href='{event.link}'>{event.place}</a>\n👨‍🎓Тренер: {event.trainer.first_name}\nНе забудьте с собой форму, головной убор и питьевую воду‼️\nДо встречи на корте 🙌",parse_mode="HTML")
+                    bot.send_message(reserve_1.reserve.tg_id, f"«Вы добавлены в основу на {event.measure}\n📆Дата: {event.date.day}/{event.date.month}/{event.date.year}\n🕰️Время: {event.date.time}:{event.date.hour}\n📍Локация: <a href='{event.link}'>{event.place}</a>\n👨‍🎓Тренер: {event.trainer.first_name}\nНе забудьте с собой форму, головной убор и питьевую воду‼️\nДо встречи на корте 🙌",parse_mode="HTML")
                     reserve_1.delete()
                     for reserved in Reserve.objects.filter(event=event):
                         reserved.pos -= 1
                         reserved.save()
                 except Reserve.DoesNotExist:
                     pass
-                bot.send_message(call.from_user.id, f"Вы выписаны с {event.measure}\n📆Дата: {event.data.day}/{event.data.month}/{event.data.year}\n🕰️Время: {event.date.time}:{event.date.hour}\n📍Локация: <a href='{event.link}'>{event.place}</a>\n👨‍🎓Тренер: {event.trainer.first_name}\nБудем рады видеть Вас на следующей тренировке", reply_markup=markup,parse_mode="HTML")
+                bot.send_message(call.from_user.id, f"Вы выписаны с {event.measure}\n📆Дата: {event.date.day}/{event.date.month}/{event.date.year}\n🕰️Время: {event.date.time}:{event.date.hour}\n📍Локация: <a href='{event.link}'>{event.place}</a>\n👨‍🎓Тренер: {event.trainer.first_name}\nБудем рады видеть Вас на следующей тренировке", reply_markup=markup,parse_mode="HTML")
             else:
                 user_reserve=Reserve.objects.get(event=event,reserve=user)
                 other_reserves=Reserve.objects.filter(event=event,pos__gt=user_reserve.pos)
@@ -418,29 +416,29 @@ def callback_handler(call):
                 for reserve in other_reserves:
                     reserve.pos -= 1
                     reserve.save()
-                bot.send_message(call.from_user.id, f"You canceled your reserve from {event.measure}", reply_markup=markup)
+                bot.send_message(call.from_user.id, f"Вы отменили свой резерв с {event.measure}", reply_markup=markup)
             send_event_message(event.id,"old")
         else:
-            message = bot.send_message(group_id, "You are not join event")
+            message = bot.send_message(group_id, "Вы не записаны на эту тренировку")
             time.sleep(10)
             bot.delete_message(group_id, message.message_id)
     if call.data.split("|")[0] == "select_event":
         markup = types.InlineKeyboardMarkup()
         for event in Event.objects.all():
-            btn = types.InlineKeyboardButton(text=f"Edit Date&Time:{event.date} ({event.members.count()+event.reserve.count()}/{event.max_member})", callback_data=f"{call.data.split("|")[1]}|{event.id}")
+            btn = types.InlineKeyboardButton(text=f"Редактировать Дата&Время:{event.date} ({event.members.count()+event.reserve.count()}/{event.max_member})", callback_data=f"{call.data.split("|")[1]}|{event.id}")
             markup.row(btn)
-        back_btn = types.InlineKeyboardButton(text=f"Back", callback_data="admin")
+        back_btn = types.InlineKeyboardButton(text=f"Назад", callback_data="admin")
         markup.row(back_btn)
-        bot.send_message(call.from_user.id, f"You want edit event:", reply_markup=markup)
+        bot.send_message(call.from_user.id, f"Вы хотите отредактировать тренировку:", reply_markup=markup)
     if call.data.split("|")[0] == "edit_event":
         markup = types.InlineKeyboardMarkup()
-        measure_btn = types.InlineKeyboardButton(text=f"Edit Measure",callback_data=f"start_edit|measure|{call.data.split("|")[1]}")
-        date_btn = types.InlineKeyboardButton(text=f"Edit Date",callback_data=f"start_edit|date|{call.data.split("|")[1]}")
-        level_btn = types.InlineKeyboardButton(text=f"Edit Level",callback_data=f"edit_level|{call.data.split("|")[1]}")
-        place_btn = types.InlineKeyboardButton(text=f"Edit Place",callback_data=f"start_edit|place|{call.data.split("|")[1]}")
-        trainer_btn = types.InlineKeyboardButton(text=f"Edit trainer",callback_data=f"edit_trainer|{call.data.split("|")[1]}")
-        link_btn = types.InlineKeyboardButton(text=f"Edit link",callback_data=f"start_edit|link|{call.data.split("|")[1]}")
-        max_member_btn = types.InlineKeyboardButton(text=f"Edit max member", callback_data=f"start_edit|max_member|{call.data.split("|")[1]}")
+        measure_btn = types.InlineKeyboardButton(text=f"Редактировать название",callback_data=f"start_edit|measure|{call.data.split("|")[1]}")
+        date_btn = types.InlineKeyboardButton(text=f"Редактировать дату",callback_data=f"start_edit|date|{call.data.split("|")[1]}")
+        level_btn = types.InlineKeyboardButton(text=f"Редактировать уровень",callback_data=f"edit_level|{call.data.split("|")[1]}")
+        place_btn = types.InlineKeyboardButton(text=f"Редактировать место",callback_data=f"start_edit|place|{call.data.split("|")[1]}")
+        trainer_btn = types.InlineKeyboardButton(text=f"Редактировать тренера",callback_data=f"edit_trainer|{call.data.split("|")[1]}")
+        link_btn = types.InlineKeyboardButton(text=f"Редактировать ссылку",callback_data=f"start_edit|link|{call.data.split("|")[1]}")
+        max_member_btn = types.InlineKeyboardButton(text=f"Редактировать максимум участников", callback_data=f"start_edit|max_member|{call.data.split("|")[1]}")
         markup.row(measure_btn)
         markup.row(date_btn)
         markup.row(level_btn)
@@ -448,26 +446,26 @@ def callback_handler(call):
         markup.row(trainer_btn)
         markup.row(link_btn)
         markup.row(max_member_btn)
-        back_btn = types.InlineKeyboardButton(text=f"Back", callback_data="admin")
+        back_btn = types.InlineKeyboardButton(text=f"Назад", callback_data="admin")
         markup.row(back_btn)
-        bot.send_message(call.from_user.id, f"Select:", reply_markup=markup)
+        bot.send_message(call.from_user.id, f"Выберите:", reply_markup=markup)
     if call.data.split("|")[0] == "edit_level":
         markup = types.InlineKeyboardMarkup()
         event = Event.objects.get(id=call.data.split("|")[1])
         for level in event.StatusChoice.labels:
             btn = types.InlineKeyboardButton(text=f"{level}",callback_data=f"finish_level|{level}|{event.id}")
             markup.row(btn)
-        back_btn = types.InlineKeyboardButton(text=f"Back", callback_data="admin")
+        back_btn = types.InlineKeyboardButton(text=f"Назад", callback_data="admin")
         markup.row(back_btn)
-        bot.send_message(call.from_user.id, f"Select:", reply_markup=markup)
+        bot.send_message(call.from_user.id, f"Выберите:", reply_markup=markup)
     if call.data.split("|")[0] == "finish_level":
         markup = types.InlineKeyboardMarkup()
         event = Event.objects.get(id=call.data.split("|")[2])
         event.level = next((s for s in event.StatusChoice if s.label == call.data.split("|")[1]), None)
         event.save()
-        back_btn = types.InlineKeyboardButton(text=f"Back", callback_data="admin")
+        back_btn = types.InlineKeyboardButton(text=f"Назад", callback_data="admin")
         markup.row(back_btn)
-        bot.send_message(call.from_user.id, f"edit done:", reply_markup=markup)
+        bot.send_message(call.from_user.id, f"редактирование завершено:", reply_markup=markup)
         bot.delete_message(group_id, event.message_id)
         send_event_message(event.id,"old")
     if call.data.split("|")[0] == "edit_trainer":
@@ -475,18 +473,18 @@ def callback_handler(call):
         for trainer in CustomUser.objects.filter(is_trainer=True):
             btn = types.InlineKeyboardButton(text=f"{trainer.first_name}", callback_data=f"finish_trainer|{trainer.id}|{call.data.split("|")[1]}")
             markup.row(btn)
-        back_btn = types.InlineKeyboardButton(text=f"Back", callback_data="admin")
+        back_btn = types.InlineKeyboardButton(text=f"Назад", callback_data="admin")
         markup.row(back_btn)
-        bot.send_message(call.from_user.id, f"Select:", reply_markup=markup)
+        bot.send_message(call.from_user.id, f"Выберите:", reply_markup=markup)
     if call.data.split("|")[0] == "finish_trainer":
         markup = types.InlineKeyboardMarkup()
         event = Event.objects.get(id=call.data.split("|")[2])
         user= CustomUser.objects.get(id=call.data.split("|")[1])
         event.trainer = user
         event.save()
-        back_btn = types.InlineKeyboardButton(text=f"Back", callback_data="admin")
+        back_btn = types.InlineKeyboardButton(text=f"Назад", callback_data="admin")
         markup.row(back_btn)
-        bot.send_message(call.from_user.id, f"edit done:", reply_markup=markup)
+        bot.send_message(call.from_user.id, f"редактирование завершено:", reply_markup=markup)
         bot.delete_message(group_id, event.message_id)
         send_event_message(event.id,"old")
     if call.data.split("|")[0] == "cancel_event":
@@ -494,17 +492,17 @@ def callback_handler(call):
         event = Event.objects.get(id=call.data.split("|")[1])
         if event.members.exists():
             for member in event.members.all():
-                bot.send_message(member.tg_id, f"{event.measure} {event.date} canceled:")
+                bot.send_message(member.tg_id, f"{event.measure} {event.date} отменена:")
             if event.reserve.exists():
                 for reserve in event.reserve.all():
                     Reserve.objects.get(event=event,reserve=reserve).delete()
-                    bot.send_message(reserve.tg_id, f"Тренировка [{event.data.day}/{event.data.month}/{event.data.year}, {event.date.time}:{event.date.hour}, <a href='{event.link}'>{event.place}</a>] у тренера [{event.trainer.first_name}] ОТМЕНЕНА‼️\nПриносим свои извинения",parse_mode="HTML")
-        bot.send_message(group_id, f"{event.measure} {event.date} canceled:")
+                    bot.send_message(reserve.tg_id, f"Тренировка [{event.date.day}/{event.date.month}/{event.date.year}, {event.date.time}:{event.date.hour}, <a href='{event.link}'>{event.place}</a>] у тренера [{event.trainer.first_name}] ОТМЕНЕНА‼️\nПриносим свои извинения",parse_mode="HTML")
+        bot.send_message(group_id, f"{event.measure} {event.date} отменена:")
         bot.delete_message(group_id, event.message_id)
         event.delete()
-        back_btn = types.InlineKeyboardButton(text=f"Back", callback_data="admin")
+        back_btn = types.InlineKeyboardButton(text=f"Назад", callback_data="admin")
         markup.row(back_btn)
-        bot.send_message(call.from_user.id, f"deleting done:", reply_markup=markup)
+        bot.send_message(call.from_user.id, f"удаление завершено:", reply_markup=markup)
     if call.data == "add_event":
         start_adding_event(call.from_user.id)
     if call.data.split("|")[0] == "trainer":
@@ -514,18 +512,18 @@ def callback_handler(call):
         for level in Event.StatusChoice.labels:
             btn = types.InlineKeyboardButton(text=f"{level}", callback_data=f"finish_add_event|{level}")
             markup.row(btn)
-        bot.send_message(user_id, text="Select level:", reply_markup=markup)
+        bot.send_message(user_id, text="Выберите уровень:", reply_markup=markup)
     if call.data.split("|")[0] == "finish_add_event":
         markup = types.InlineKeyboardMarkup()
         user_id = call.from_user.id
         user_data[user_id]["level"] = call.data.split("|")[1]
         info = user_data[user_id]
-        confirm_btn = types.InlineKeyboardButton(text="Confirm", callback_data="confirm")
-        cancel_btn = types.InlineKeyboardButton(text="Cancel", callback_data="admin")
+        confirm_btn = types.InlineKeyboardButton(text="Подтвердить", callback_data="confirm")
+        cancel_btn = types.InlineKeyboardButton(text="Отменить", callback_data="admin")
         markup.row(confirm_btn)
         markup.row(cancel_btn)
         with open(f'media/{info["picture"]}', "rb") as photo:
-            bot.send_photo(user_id, photo=photo, caption=f"Check your info:{info["measure"]} {info["date"]} {info["time"]} {info["level"]} {CustomUser.objects.get(id=info["trainer"]).first_name} {info["max_member"]} {info["link"]}",
+            bot.send_photo(user_id, photo=photo, caption=f"Проверьте вашу информацию:{info["measure"]} {info["date"]} {info["time"]} {info["level"]} {CustomUser.objects.get(id=info["trainer"]).first_name} {info["max_member"]} {info["link"]}",
                              reply_markup=markup)
     if call.data == "confirm":
         markup = types.InlineKeyboardMarkup()
@@ -536,10 +534,10 @@ def callback_handler(call):
         final_date = timezone.make_aware(datetime(int(date[2]), int(date[1]), int(date[0]), int(event_time[0]), int(event_time[1])))
         trainer = CustomUser.objects.get(id=info["trainer"])
         event = Event.objects.create(photo=info["photo"],measure=info["measure"],date=final_date, level=next((s for s in Event.StatusChoice if s.label == info["level"]), None), place=info["place"], trainer=trainer, max_member=info["max_member"],link=info["link"])
-        back_btn = types.InlineKeyboardButton(text=f"Back", callback_data="admin")
+        back_btn = types.InlineKeyboardButton(text=f"Назад", callback_data="admin")
         markup.row(back_btn)
         send_event_message(event.id,"new")
-        bot.send_message(user_id, text="Adding event done",reply_markup=markup)
+        bot.send_message(user_id, text="Добавление тренировки завершено",reply_markup=markup)
     if call.data.split("|")[0] == "start_edit":
         start_editing_event(call.from_user.id,call.data.split("|")[1],call.data.split("|")[2])
     if call.data.split("|")[0] == "finish_edit":
@@ -563,9 +561,9 @@ def callback_handler(call):
         elif state == "link":
             event.update(date=info[state])
             event.save()
-        back_btn = types.InlineKeyboardButton(text=f"Back", callback_data="admin")
+        back_btn = types.InlineKeyboardButton(text=f"Назад", callback_data="admin")
         markup.row(back_btn)
-        bot.send_message(user_id, text="Editing done", reply_markup=markup)
+        bot.send_message(user_id, text="Редактирование завершено", reply_markup=markup)
         bot.delete_message(group_id, event.message_id)
         send_event_message(event.id,"old")
 bot.infinity_polling()
