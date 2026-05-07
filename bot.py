@@ -25,7 +25,7 @@ django.setup()
 import telebot
 from environs import Env
 from user.models import CustomUser
-from event.models import Event, Reserve
+from event.models import Event, Reserve, Member
 import threading
 from apscheduler.schedulers.background import BackgroundScheduler
 from django.core.validators import URLValidator
@@ -67,6 +67,10 @@ def menu(message):
 
 
 def create_user(message):
+    if CustomUser.objects.filter(tg_id=message.from_user.id).exists():
+        pass
+    else:
+        bot.send_message(message.chat.id, f"rules")
     markup = types.InlineKeyboardMarkup()
     CustomUser.objects.update_or_create(tg_id=message.chat.id,defaults={
 		"first_name":message.chat.first_name,
@@ -222,19 +226,22 @@ def handle_event_steps(message):
         bot.send_message(user_id, text="Выберите тренера:", reply_markup=markup)
 
 def info_text(event):
-    members = "\n".join([str(user.first_name) for user in event.members.all()])
-    reserved_users = "\n".join([str(user.first_name) for user in event.reserve.all()])
+    members_list = Member.objects.filter(event=event).order_by('pos')
+    members = "\n".join([f"{m.pos}. {m.member.first_name}" for m in members_list])
+    
+    reserved_list = Reserve.objects.filter(event=event).order_by('pos')
+    reserved_users = "\n".join([f"{r.pos}. {r.reserve.first_name}" for r in reserved_list])
     if event.members.count() == 0:
-        return f"{event.measure}\n\n📅 {event.date}\n📊 Уровень:{event.get_level_display()}\n📍<a href='{event.link}'>{event.place}</a>\n👨‍🏫 Тренер:{event.trainer.first_name}\n\n👥 Участники({event.members.count() + event.reserve.count()}/{event.max_member})\nПока никто не записался\n\n💬 По вопросам стоимости, тренировочного уровня и другим обращаться в лс @allo_litvinova",
+        return f"{event.measure}\n\n📆Дата {event.date.day}/{event.date.month}/{event.date.year}\n⏳Время {event.date.time}:{event.date.hour}\n📊 Уровень:{event.get_level_display()}\n📍Локация <a href='{event.link}'>{event.place}</a>\n👨‍🏫 Тренер:{event.trainer.first_name}\n\n👥 Участники({event.members.count() + event.reserve.count()}/{event.max_member})\nПока никто не записался\n\n💬 По вопросам стоимости, тренировочного уровня и другим обращаться в лс @allo_litvinova",
 
     elif event.max_member > event.members.count():
-        return f"{event.measure}\n\n📅 {event.date}\n📊 Уровень:{event.get_level_display()}\n📍<a href='{event.link}'>{event.place}</a>\n👨‍🏫 Тренер:{event.trainer.first_name}\n\n👥 Участники({event.members.count() + event.reserve.count()}/{event.max_member})\n{members}\n\n💬 По вопросам стоимости, тренировочного уровня и другим обращаться в лс @allo_litvinova",
+        return f"{event.measure}\n\n📆Дата {event.date.day}/{event.date.month}/{event.date.year}\n⏳Время {event.date.time}:{event.date.hour}\n📊 Уровень:{event.get_level_display()}\n📍Локация <a href='{event.link}'>{event.place}</a>\n👨‍🏫 Тренер:{event.trainer.first_name}\n\n👥 Участники({event.members.count() + event.reserve.count()}/{event.max_member})\n{members}\n\n💬 По вопросам стоимости, тренировочного уровня и другим обращаться в лс @allo_litvinova",
 
     elif event.max_member == event.members.count() + event.reserve.count():
-        return f"{event.measure}\n\n📅 {event.date}\n📊 Уровень:{event.get_level_display()}\n📍<a href='{event.link}'>{event.place}</a>\n👨‍🏫 Тренер:{event.trainer.first_name}\n\n👥 Участники({event.members.count() + event.reserve.count()}/{event.max_member})\n{members}\n\n🔒 Набор закрыт!\n\n💬 По вопросам стоимости, тренировочного уровня и другим обращаться в лс @allo_litvinova"
+        return f"{event.measure}\n\n📆Дата {event.date.day}/{event.date.month}/{event.date.year}\n⏳Время {event.date.time}:{event.date.hour}\n📊 Уровень:{event.get_level_display()}\n📍Локация <a href='{event.link}'>{event.place}</a>\n👨‍🏫 Тренер:{event.trainer.first_name}\n\n👥 Участники({event.members.count() + event.reserve.count()}/{event.max_member})\n{members}\n\n**🔒 Набор закрыт!**\n\n💬 По вопросам стоимости, тренировочного уровня и другим обращаться в лс @allo_litvinova"
 
     else:
-        return f"{event.measure}\n\n📅 {event.date}\n📊 Уровень:{event.get_level_display()}\n📍<a href='{event.link}'>{event.place}</a>\n👨‍🏫 Тренер:{event.trainer.first_name}\n\n👥 Участники({event.members.count() + event.reserve.count()}/{event.max_member})\n{members}\n\n🔒 Набор закрыт!\n\n📋 Резерв (если вы в резерве — приходить не нужно):\n{reserved_users} \n\n💬 По вопросам стоимости, тренировочного уровня и другим обращаться в лс @allo_litvinova",
+        return f"{event.measure}\n\n📆Дата {event.date.day}/{event.date.month}/{event.date.year}\n⏳Время {event.date.time}:{event.date.hour}\n📊 Уровень:{event.get_level_display()}\n📍Локация <a href='{event.link}'>{event.place}</a>\n👨‍🏫 Тренер:{event.trainer.first_name}\n\n👥 Участники({event.members.count() + event.reserve.count()}/{event.max_member})\n{members}\n\n**🔒 Набор закрыт!**\n\n📋 Резерв (если вы в резерве — приходить не нужно):\n{reserved_users} \n\n💬 По вопросам стоимости, тренировочного уровня и другим обращаться в лс @allo_litvinova",
 
 def send_event_message(event_id,status):
     markup = types.InlineKeyboardMarkup()
@@ -280,16 +287,19 @@ def delete_expired_events():
             members__lt=4
         )
         for event in expired_events:
-            for member in event.members:
+            for member in event.members.all():
                 bot.send_message(member.tg_id, f"{event.measure} canceled")
-            for reserve in event.reserve:
+            for reserve in event.reserve.all():
                 bot.send_message(reserve.tg_id, f"{event.measure} canceled")
+            Member.objects.filter(event=event).delete()
             Reserve.objects.filter(event=event).delete()
             bot.delete_message(group_id,event.message_id)
             event.delete()
         for event in no_member_events:
-            for member in event.members:
+            for member in event.members.all():
                 bot.send_message(member.tg_id, f"{event.measure} canceled because not enough members")
+            Member.objects.filter(event=event).delete()
+            Reserve.objects.filter(event=event).delete()
             bot.delete_message(group_id, event.message_id)
             event.delete()
         time.sleep(60)
@@ -348,6 +358,7 @@ def callback_handler(call):
                     bot.delete_message(group_id, event.message_id)
                     bot.send_message(call.from_user.id, f"В РЕЗЕРВЕ\nНа {event.measure}\n📆Дата: {event.date.day}/{event.date.month}/{event.date.year}\n🕰️Время: {event.date.time}:{event.date.hour}\n📍Локация: <a href='{event.link}'>{event.place}</a>\n👨‍🎓Тренер: {event.trainer.first_name}\nВы записаны в ‼️РЕЗЕРВ‼️\nпри освобождении места на тренировку, Вы автоматически будете добавлены на неё, при этом Вам придёт об этом оповещение 🚨 ", reply_markup=markup,parse_mode="HTML")
                 else:
+                    Member.objects.create(event=event,member=user,pos=event.members.count()+1)
                     event.members.add(user)
                     bot.send_message(call.from_user.id, f"Вы записаны на {event.measure}\n📆Дата: {event.date.day}/{event.date.month}/{event.date.year}\n🕰️Время: {event.date.time}:{event.date.hour}\n📍Локация: <a href='{event.link}'>{event.place}</a>\n👨‍🎓Тренер: {event.trainer.first_name}\nНе забудьте с собой форму, головной убор и питьевую воду‼️\nДо встречи на корте 🙌", reply_markup=markup,parse_mode="HTML")
                 send_event_message(event.id,"old")
@@ -395,9 +406,19 @@ def callback_handler(call):
         markup.row(back_btn)
         if event.members.filter(id=user.id).exists() or event.reserve.filter(id=user.id).exists():
             if event.members.filter(id=user.id).exists():
+                # Remove member and delete Member record
+                user_member = Member.objects.get(event=event, member=user)
+                other_members = Member.objects.filter(event=event, pos__gt=user_member.pos)
+                user_member.delete()
                 event.members.remove(user)
+                # Update positions of remaining members
+                for member in other_members:
+                    member.pos -= 1
+                    member.save()
+                
                 try:
                     reserve_1 = Reserve.objects.get(event=event,pos=1)
+                    Member.objects.create(event=event, member=reserve_1.reserve, pos=event.members.count()+1)
                     event.members.add(reserve_1.reserve)
                     event.reserve.remove(reserve_1.reserve)
                     bot.send_message(reserve_1.reserve.tg_id, f"«Вы добавлены в основу на {event.measure}\n📆Дата: {event.date.day}/{event.date.month}/{event.date.year}\n🕰️Время: {event.date.time}:{event.date.hour}\n📍Локация: <a href='{event.link}'>{event.place}</a>\n👨‍🎓Тренер: {event.trainer.first_name}\nНе забудьте с собой форму, головной убор и питьевую воду‼️\nДо встречи на корте 🙌",parse_mode="HTML")
@@ -497,6 +518,8 @@ def callback_handler(call):
                 for reserve in event.reserve.all():
                     Reserve.objects.get(event=event,reserve=reserve).delete()
                     bot.send_message(reserve.tg_id, f"Тренировка [{event.date.day}/{event.date.month}/{event.date.year}, {event.date.time}:{event.date.hour}, <a href='{event.link}'>{event.place}</a>] у тренера [{event.trainer.first_name}] ОТМЕНЕНА‼️\nПриносим свои извинения",parse_mode="HTML")
+        Member.objects.filter(event=event).delete()
+        Reserve.objects.filter(event=event).delete()
         bot.send_message(group_id, f"{event.measure} {event.date} отменена:")
         bot.delete_message(group_id, event.message_id)
         event.delete()

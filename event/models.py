@@ -8,11 +8,17 @@ from user.models import CustomUser
 class Event(models.Model):
     class StatusChoice(models.TextChoices):
         FIRST = "Fi", "First"
+        FIRST_AND_NEXT = "FN", "First-Next"
         NEXT = "Ne", "Next"
+        NEXT_AND_LIGHT = "NL", "Next-Light"
         LIGHT = "Li", "Light"
+        LIGHT_AND_MEDIUM = "LM", "Light-Medium"
         MEDIUM = "Me", "Medium"
+        MEDIUM_AND_ADVANCED = "MA", "Medium-Advanced"
         ADVANCED = "Ad", "Advanced"
+        ADVANCED_AND_HARD = "AH", "Advanced-Hard"
         HARD = "Ha", "Hard"
+        HARD_AND_MASTER = "HM", "Hard-Master"
         MASTER = "Ma", "Master"
 
 
