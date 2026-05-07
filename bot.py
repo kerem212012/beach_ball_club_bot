@@ -6,7 +6,6 @@ from datetime import datetime, timedelta
 from django.db.models import Q
 from django.utils import timezone
 from telebot import types
-from telebot.apihelper import ApiTelegramException
 
 BASE_DIR = os.path.abspath(
     os.path.join(os.path.dirname(__file__))
@@ -45,13 +44,13 @@ bot = telebot.TeleBot(env.str("TG_TOKEN"))
 scheduler = BackgroundScheduler()
 
 def menu(message):
-    """Display main menu with navigation buttons.
+    """Отображение главного меню с кнопками навигации.
 
-    Shows options for browsing products, categories, new releases,
-    and shopping cart. Admin panel is displayed for staff/superuser users.
+    Показывает опции для просмотра тренировок, присоединения к ним,
+    и панель администратора для персонала и суперпользователей.
 
     Args:
-        message: Telegram message object containing chat information
+        message: объект сообщения Telegram с информацией о чате
     """
     markup = types.InlineKeyboardMarkup()
     registered_btn = types.InlineKeyboardButton(text="Мои тренировки", callback_data="my_events")
@@ -70,7 +69,7 @@ def create_user(message):
     if CustomUser.objects.filter(tg_id=message.from_user.id).exists():
         pass
     else:
-        bot.send_message(message.chat.id, f"rules")
+        bot.send_message(message.chat.id, f"Правила")
     markup = types.InlineKeyboardMarkup()
     CustomUser.objects.update_or_create(tg_id=message.chat.id,defaults={
 		"first_name":message.chat.first_name,
@@ -96,12 +95,12 @@ def start_editing_event(tg_id,state,event_id):
 
 @bot.message_handler(func=lambda msg: msg.chat.id in edit_state, content_types=['photo', 'text'])
 def handle_edit_steps(message):
-    """Handle category creation steps.
+    """Обработка шагов редактирования тренировки.
 
-    Processes title and photo input for new categories.
+    Обрабатывает ввод названия и других параметров для редактирования.
 
     Args:
-        message: Telegram message with text or photo
+        message: сообщение Telegram с текстом или фото
     """
     user_id = message.chat.id
     state = user_state.get(user_id)
@@ -165,12 +164,12 @@ def handle_edit_steps(message):
 
 @bot.message_handler(func=lambda msg: msg.chat.id in user_state, content_types=['photo', 'text'])
 def handle_event_steps(message):
-    """Handle category creation steps.
+    """Обработка шагов создания тренировки.
 
-    Processes title and photo input for new categories.
+    Обрабатывает ввод названия и фото для новых тренировок.
 
     Args:
-        message: Telegram message with text or photo
+        message: сообщение Telegram с текстом или фото
     """
     user_id = message.chat.id
     state = user_state.get(user_id)
@@ -246,11 +245,12 @@ def info_text(event):
 def send_event_message(event_id,status):
     markup = types.InlineKeyboardMarkup()
     event = Event.objects.get(id=event_id)
-    leave_btn = types.InlineKeyboardButton(text="Leave", callback_data=f"leave|{event.id}")
+    leave_btn = types.InlineKeyboardButton(text="Выйти", callback_data=f"leave|{event.id}")
     if event.members.count() < event.max_member:
-        btn = types.InlineKeyboardButton(text="Join", callback_data=f"join|join|{event.id}")
+        btn = types.InlineKeyboardButton(text="Присоединиться", callback_data=f"join|join|{event.id}")
     elif event.members.count() >= event.max_member:
-        btn = types.InlineKeyboardButton(text="Reserve", callback_data=f"join|reserve|{event.id}")
+        btn = types.InlineKeyboardButton(text="Резерв", callback_data=f"join|reserve|{event.id}")
+        btn = types.InlineKeyboardButton(text="Резерв", callback_data=f"join|reserve|{event.id}")
     markup.add(btn, leave_btn)
     if status == "old":
         bot.delete_message(group_id, event.message_id)
@@ -288,16 +288,16 @@ def delete_expired_events():
         )
         for event in expired_events:
             for member in event.members.all():
-                bot.send_message(member.tg_id, f"{event.measure} canceled")
+                bot.send_message(member.tg_id, f"{event.measure} отменена")
             for reserve in event.reserve.all():
-                bot.send_message(reserve.tg_id, f"{event.measure} canceled")
+                bot.send_message(reserve.tg_id, f"{event.measure} отменена")
             Member.objects.filter(event=event).delete()
             Reserve.objects.filter(event=event).delete()
             bot.delete_message(group_id,event.message_id)
             event.delete()
         for event in no_member_events:
             for member in event.members.all():
-                bot.send_message(member.tg_id, f"{event.measure} canceled because not enough members")
+                bot.send_message(member.tg_id, f"{event.measure} отменена - недостаточно участников")
             Member.objects.filter(event=event).delete()
             Reserve.objects.filter(event=event).delete()
             bot.delete_message(group_id, event.message_id)
@@ -350,7 +350,7 @@ def callback_handler(call):
             event=Event.objects.get(id=call.data.split("|")[2])
 
             if not event.members.filter(id=user.id).exists() and not event.reserve.filter(id=user.id).exists():
-                back_btn = types.InlineKeyboardButton(text=f"Back", callback_data="menu")
+                back_btn = types.InlineKeyboardButton(text=f"Назад", callback_data="menu")
                 markup.row(back_btn)
                 if call.data.split("|")[1] == "reserve":
                     Reserve.objects.create(event=event,reserve=user,pos=event.reserve.count()+1)
