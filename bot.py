@@ -1,3 +1,4 @@
+import html
 import os
 import sys
 import time
@@ -40,6 +41,7 @@ edit_data = {}
 env = Env()
 env.read_env()
 group_id=-5244172242
+group_id_2=-1001641728450
 bot = telebot.TeleBot(env.str("TG_TOKEN"))
 scheduler = BackgroundScheduler()
 
@@ -202,15 +204,19 @@ def handle_event_steps(message):
         else:
             user_data[user_id]["max_member"] = message.text.strip()
             user_state[user_id] = "photo"
-            bot.send_message(user_id, text="Напишите дату(21/12/2026):")
+            bot.send_message(user_id, text="Прикрепите картинку:")
     elif state == "photo":
-        file_path = bot.get_file(message.photo[-1].file_id).file_path
-        file = bot.download_file(file_path)
-        with open(f"media/events/{message.photo[-1].file_unique_id}.png", "wb") as code:
-            user_data[user_id]["photo"] = f"products/{message.photo[-1].file_unique_id}.png"
-            code.write(file)
-        user_state[user_id] = "date"
-        bot.send_message(user_id, text="Напишите дату(21/12/2026):")
+        if message.content_type == "photo":
+            file_path = bot.get_file(message.photo[-1].file_id).file_path
+            file = bot.download_file(file_path)
+            with open(f"media/events/{message.photo[-1].file_unique_id}.png", "wb") as code:
+                user_data[user_id]["photo"] = f"events/{message.photo[-1].file_unique_id}.png"
+                code.write(file)
+            user_state[user_id] = "date"
+            bot.send_message(user_id, text="Напишите дату(21/12/2026)")
+        else:
+            bot.send_message(user_id, text="Это не картинка! Прикрепите картинку:")
+
     elif state == "date":
         user_data[user_id]["date"] = message.text.strip()
         user_state[user_id] = "time"
@@ -231,16 +237,16 @@ def info_text(event):
     reserved_list = Reserve.objects.filter(event=event).order_by('pos')
     reserved_users = "\n".join([f"{r.pos}. {r.reserve.first_name}" for r in reserved_list])
     if event.members.count() == 0:
-        return f"{event.measure}\n\n📆Дата {event.date.day}/{event.date.month}/{event.date.year}\n⏳Время {event.date.time}:{event.date.hour}\n📊 Уровень:{event.get_level_display()}\n📍Локация <a href='{event.link}'>{event.place}</a>\n👨‍🏫 Тренер:{event.trainer.first_name}\n\n👥 Участники({event.members.count() + event.reserve.count()}/{event.max_member})\nПока никто не записался\n\n💬 По вопросам стоимости, тренировочного уровня и другим обращаться в лс @allo_litvinova",
+        return f"{event.measure}\n\n📆Дата {event.date.day}/{event.date.month}/{event.date.year}\n⏳Время {event.date.hour}:{event.date.minute}\n📊 Уровень:{event.get_level_display()}\n📍Локация <a href='{event.link}'>{event.place}</a>\n👨‍🏫 Тренер:{event.trainer.first_name}\n\n👥 Участники({event.members.count() + event.reserve.count()}/{event.max_member})\nПока никто не записался\n\n💬 По вопросам стоимости, тренировочного уровня и другим обращаться в лс @allo_litvinova"
 
     elif event.max_member > event.members.count():
-        return f"{event.measure}\n\n📆Дата {event.date.day}/{event.date.month}/{event.date.year}\n⏳Время {event.date.time}:{event.date.hour}\n📊 Уровень:{event.get_level_display()}\n📍Локация <a href='{event.link}'>{event.place}</a>\n👨‍🏫 Тренер:{event.trainer.first_name}\n\n👥 Участники({event.members.count() + event.reserve.count()}/{event.max_member})\n{members}\n\n💬 По вопросам стоимости, тренировочного уровня и другим обращаться в лс @allo_litvinova",
+        return f"{event.measure}\n\n📆Дата {event.date.day}/{event.date.month}/{event.date.year}\n⏳Время {event.date.hour}:{event.date.minute}\n📊 Уровень:{event.get_level_display()}\n📍Локация <a href='{event.link}'>{event.place}</a>\n👨‍🏫 Тренер:{event.trainer.first_name}\n\n👥 Участники({event.members.count() + event.reserve.count()}/{event.max_member})\n{members}\n\n💬 По вопросам стоимости, тренировочного уровня и другим обращаться в лс @allo_litvinova"
 
     elif event.max_member == event.members.count() + event.reserve.count():
-        return f"{event.measure}\n\n📆Дата {event.date.day}/{event.date.month}/{event.date.year}\n⏳Время {event.date.time}:{event.date.hour}\n📊 Уровень:{event.get_level_display()}\n📍Локация <a href='{event.link}'>{event.place}</a>\n👨‍🏫 Тренер:{event.trainer.first_name}\n\n👥 Участники({event.members.count() + event.reserve.count()}/{event.max_member})\n{members}\n\n**🔒 Набор закрыт!**\n\n💬 По вопросам стоимости, тренировочного уровня и другим обращаться в лс @allo_litvinova"
+        return f"{event.measure}\n\n📆Дата {event.date.day}/{event.date.month}/{event.date.year}\n⏳Время {event.date.hour}:{event.date.minute}\n📊 Уровень:{event.get_level_display()}\n📍Локация <a href='{event.link}'>{event.place}</a>\n👨‍🏫 Тренер:{event.trainer.first_name}\n\n👥 Участники({event.members.count() + event.reserve.count()}/{event.max_member})\n{members}\n\n**🔒 Набор закрыт!**\n\n💬 По вопросам стоимости, тренировочного уровня и другим обращаться в лс @allo_litvinova"
 
     else:
-        return f"{event.measure}\n\n📆Дата {event.date.day}/{event.date.month}/{event.date.year}\n⏳Время {event.date.time}:{event.date.hour}\n📊 Уровень:{event.get_level_display()}\n📍Локация <a href='{event.link}'>{event.place}</a>\n👨‍🏫 Тренер:{event.trainer.first_name}\n\n👥 Участники({event.members.count() + event.reserve.count()}/{event.max_member})\n{members}\n\n**🔒 Набор закрыт!**\n\n📋 Резерв (если вы в резерве — приходить не нужно):\n{reserved_users} \n\n💬 По вопросам стоимости, тренировочного уровня и другим обращаться в лс @allo_litvinova",
+        return f"{event.measure}\n\n📆Дата {event.date.day}/{event.date.month}/{event.date.year}\n⏳Время {event.date.hour}:{event.date.minute}\n📊 Уровень:{event.get_level_display()}\n📍Локация <a href='{event.link}'>{event.place}</a>\n👨‍🏫 Тренер:{event.trainer.first_name}\n\n👥 Участники({event.members.count() + event.reserve.count()}/{event.max_member})\n{members}\n\n**🔒 Набор закрыт!**\n\n📋 Резерв (если вы в резерве — приходить не нужно):\n{reserved_users} \n\n💬 По вопросам стоимости, тренировочного уровня и другим обращаться в лс @allo_litvinova"
 
 def send_event_message(event_id,status):
     markup = types.InlineKeyboardMarkup()
@@ -249,7 +255,6 @@ def send_event_message(event_id,status):
     if event.members.count() < event.max_member:
         btn = types.InlineKeyboardButton(text="Присоединиться", callback_data=f"join|join|{event.id}")
     elif event.members.count() >= event.max_member:
-        btn = types.InlineKeyboardButton(text="Резерв", callback_data=f"join|reserve|{event.id}")
         btn = types.InlineKeyboardButton(text="Резерв", callback_data=f"join|reserve|{event.id}")
     markup.add(btn, leave_btn)
     if status == "old":
@@ -332,10 +337,10 @@ def callback_handler(call):
         user=CustomUser.objects.get(tg_id=call.from_user.id)
         for event in Event.objects.exclude(Q(members=user)|Q(reserve=user)):
             if event.members.count() < event.max_member:
-                btn = types.InlineKeyboardButton(text=f"Информация Дата&Время:{event.date} ({event.members.count()+event.reserve.count()}/{event.max_member})", callback_data=f"info|join|{event.id}")
+                btn = types.InlineKeyboardButton(text=f"Информация Дата&Время:📆Дата {event.date.day}/{event.date.month}/{event.date.year}\n⏳Время {event.date.hour}:{event.date.minute} ({event.members.count()+event.reserve.count()}/{event.max_member})", callback_data=f"info|join|{event.id}")
             else:
                 btn = types.InlineKeyboardButton(
-                    text=f"Информация Дата&Время: {event.date} Участники: ({event.members.count()+event.reserve.count()}/{event.max_member})",
+                    text=f"Информация Дата&Время: 📆Дата {event.date.day}/{event.date.month}/{event.date.year}\n⏳Время {event.date.hour}:{event.date.minute} Участники: ({event.members.count()+event.reserve.count()}/{event.max_member})",
                     callback_data=f"info|reserve|{event.id}")
             markup.row(btn)
         back_btn = types.InlineKeyboardButton(text=f"Назад",callback_data="menu")
@@ -356,11 +361,11 @@ def callback_handler(call):
                     Reserve.objects.create(event=event,reserve=user,pos=event.reserve.count()+1)
                     event.reserve.add(user)
                     bot.delete_message(group_id, event.message_id)
-                    bot.send_message(call.from_user.id, f"В РЕЗЕРВЕ\nНа {event.measure}\n📆Дата: {event.date.day}/{event.date.month}/{event.date.year}\n🕰️Время: {event.date.time}:{event.date.hour}\n📍Локация: <a href='{event.link}'>{event.place}</a>\n👨‍🎓Тренер: {event.trainer.first_name}\nВы записаны в ‼️РЕЗЕРВ‼️\nпри освобождении места на тренировку, Вы автоматически будете добавлены на неё, при этом Вам придёт об этом оповещение 🚨 ", reply_markup=markup,parse_mode="HTML")
+                    bot.send_message(call.from_user.id, f"В РЕЗЕРВЕ\nНа {event.measure}\n📆Дата: {event.date.day}/{event.date.month}/{event.date.year}\n🕰️Время: {event.date.hour}:{event.date.minute}\n📍Локация: <a href='{event.link}'>{event.place}</a>\n👨‍🎓Тренер: {event.trainer.first_name}\nВы записаны в ‼️РЕЗЕРВ‼️\nпри освобождении места на тренировку, Вы автоматически будете добавлены на неё, при этом Вам придёт об этом оповещение 🚨 ", reply_markup=markup,parse_mode="HTML")
                 else:
                     Member.objects.create(event=event,member=user,pos=event.members.count()+1)
                     event.members.add(user)
-                    bot.send_message(call.from_user.id, f"Вы записаны на {event.measure}\n📆Дата: {event.date.day}/{event.date.month}/{event.date.year}\n🕰️Время: {event.date.time}:{event.date.hour}\n📍Локация: <a href='{event.link}'>{event.place}</a>\n👨‍🎓Тренер: {event.trainer.first_name}\nНе забудьте с собой форму, головной убор и питьевую воду‼️\nДо встречи на корте 🙌", reply_markup=markup,parse_mode="HTML")
+                    bot.send_message(call.from_user.id, f"Вы записаны на {event.measure}\n📆Дата: {event.date.day}/{event.date.month}/{event.date.year}\n🕰️Время: {event.date.hour}:{event.date.minute}\n📍Локация: <a href='{event.link}'>{event.place}</a>\n👨‍🎓Тренер: {event.trainer.first_name}\nНе забудьте с собой форму, головной убор и питьевую воду‼️\nДо встречи на корте 🙌", reply_markup=markup,parse_mode="HTML")
                 send_event_message(event.id,"old")
             else:
                 bot.send_message(group_id, f"Вы уже записаны на {event.measure}", reply_markup=markup)
@@ -375,10 +380,10 @@ def callback_handler(call):
         reserved_events = Event.objects.filter(reserve=user)
         events = Event.objects.filter(members=user)
         for event in events:
-            btn = types.InlineKeyboardButton(text=f"Выйти Дата&Время:{event.date} ({event.members.count()+event.reserve.count()}/{event.max_member})", callback_data=f"info|leave|{event.id}")
+            btn = types.InlineKeyboardButton(text=f"Выйти Дата&Время:📆Дата {event.date.day}/{event.date.month}/{event.date.year}\n⏳Время {event.date.hour}:{event.date.minute} ({event.members.count()+event.reserve.count()}/{event.max_member})", callback_data=f"info|leave|{event.id}")
             markup.row(btn)
         for event in reserved_events:
-            btn = types.InlineKeyboardButton(text=f"Отменить резерв Дата&Время:{event.date} ({event.members.count()+event.reserve.count()}/{event.max_member})", callback_data=f"info|leave|{event.id}")
+            btn = types.InlineKeyboardButton(text=f"Отменить резерв Дата&Время:📆Дата {event.date.day}/{event.date.month}/{event.date.year}\n⏳Время {event.date.hour}:{event.date.minute} ({event.members.count()+event.reserve.count()}/{event.max_member})", callback_data=f"info|leave|{event.id}")
             markup.row(btn)
         back_btn = types.InlineKeyboardButton(text=f"Назад", callback_data="menu")
         markup.row(back_btn)
@@ -421,14 +426,14 @@ def callback_handler(call):
                     Member.objects.create(event=event, member=reserve_1.reserve, pos=event.members.count()+1)
                     event.members.add(reserve_1.reserve)
                     event.reserve.remove(reserve_1.reserve)
-                    bot.send_message(reserve_1.reserve.tg_id, f"«Вы добавлены в основу на {event.measure}\n📆Дата: {event.date.day}/{event.date.month}/{event.date.year}\n🕰️Время: {event.date.time}:{event.date.hour}\n📍Локация: <a href='{event.link}'>{event.place}</a>\n👨‍🎓Тренер: {event.trainer.first_name}\nНе забудьте с собой форму, головной убор и питьевую воду‼️\nДо встречи на корте 🙌",parse_mode="HTML")
+                    bot.send_message(reserve_1.reserve.tg_id, f"«Вы добавлены в основу на {event.measure}\n📆Дата: {event.date.day}/{event.date.month}/{event.date.year}\n🕰️Время: {event.date.hour}:{event.date.minute}\n📍Локация: <a href='{event.link}'>{event.place}</a>\n👨‍🎓Тренер: {event.trainer.first_name}\nНе забудьте с собой форму, головной убор и питьевую воду‼️\nДо встречи на корте 🙌",parse_mode="HTML")
                     reserve_1.delete()
                     for reserved in Reserve.objects.filter(event=event):
                         reserved.pos -= 1
                         reserved.save()
                 except Reserve.DoesNotExist:
                     pass
-                bot.send_message(call.from_user.id, f"Вы выписаны с {event.measure}\n📆Дата: {event.date.day}/{event.date.month}/{event.date.year}\n🕰️Время: {event.date.time}:{event.date.hour}\n📍Локация: <a href='{event.link}'>{event.place}</a>\n👨‍🎓Тренер: {event.trainer.first_name}\nБудем рады видеть Вас на следующей тренировке", reply_markup=markup,parse_mode="HTML")
+                bot.send_message(call.from_user.id, f"Вы выписаны с {event.measure}\n📆Дата: {event.date.day}/{event.date.month}/{event.date.year}\n🕰️Время: {event.date.hour}:{event.date.minute}\n📍Локация: <a href='{event.link}'>{event.place}</a>\n👨‍🎓Тренер: {event.trainer.first_name}\nБудем рады видеть Вас на следующей тренировке", reply_markup=markup,parse_mode="HTML")
             else:
                 user_reserve=Reserve.objects.get(event=event,reserve=user)
                 other_reserves=Reserve.objects.filter(event=event,pos__gt=user_reserve.pos)
@@ -446,7 +451,7 @@ def callback_handler(call):
     if call.data.split("|")[0] == "select_event":
         markup = types.InlineKeyboardMarkup()
         for event in Event.objects.all():
-            btn = types.InlineKeyboardButton(text=f"Редактировать Дата&Время:{event.date} ({event.members.count()+event.reserve.count()}/{event.max_member})", callback_data=f"{call.data.split("|")[1]}|{event.id}")
+            btn = types.InlineKeyboardButton(text=f"Редактировать Дата&Время:📆Дата {event.date.day}/{event.date.month}/{event.date.year}\n⏳Время {event.date.hour}:{event.date.minute} ({event.members.count()+event.reserve.count()}/{event.max_member})", callback_data=f"{call.data.split("|")[1]}|{event.id}")
             markup.row(btn)
         back_btn = types.InlineKeyboardButton(text=f"Назад", callback_data="admin")
         markup.row(back_btn)
@@ -513,14 +518,14 @@ def callback_handler(call):
         event = Event.objects.get(id=call.data.split("|")[1])
         if event.members.exists():
             for member in event.members.all():
-                bot.send_message(member.tg_id, f"{event.measure} {event.date} отменена:")
+                bot.send_message(member.tg_id, f"{event.measure} \n📆Дата {event.date.day}/{event.date.month}/{event.date.year}\n⏳Время {event.date.hour}:{event.date.minute} отменена:")
             if event.reserve.exists():
                 for reserve in event.reserve.all():
                     Reserve.objects.get(event=event,reserve=reserve).delete()
-                    bot.send_message(reserve.tg_id, f"Тренировка [{event.date.day}/{event.date.month}/{event.date.year}, {event.date.time}:{event.date.hour}, <a href='{event.link}'>{event.place}</a>] у тренера [{event.trainer.first_name}] ОТМЕНЕНА‼️\nПриносим свои извинения",parse_mode="HTML")
+                    bot.send_message(reserve.tg_id, f"Тренировка [{event.date.day}/{event.date.month}/{event.date.year}, {event.date.hour}:{event.date.minute}, <a href='{event.link}'>{event.place}</a>] у тренера [{event.trainer.first_name}] ОТМЕНЕНА‼️\nПриносим свои извинения",parse_mode="HTML")
         Member.objects.filter(event=event).delete()
         Reserve.objects.filter(event=event).delete()
-        bot.send_message(group_id, f"{event.measure} {event.date} отменена:")
+        bot.send_message(group_id, f"{event.measure} \n📆Дата {event.date.day}/{event.date.month}/{event.date.year}\n⏳Время {event.date.hour}:{event.date.minute} отменена:")
         bot.delete_message(group_id, event.message_id)
         event.delete()
         back_btn = types.InlineKeyboardButton(text=f"Назад", callback_data="admin")
@@ -545,7 +550,7 @@ def callback_handler(call):
         cancel_btn = types.InlineKeyboardButton(text="Отменить", callback_data="admin")
         markup.row(confirm_btn)
         markup.row(cancel_btn)
-        with open(f'media/{info["picture"]}', "rb") as photo:
+        with open(f'media/{info["photo"]}', "rb") as photo:
             bot.send_photo(user_id, photo=photo, caption=f"Проверьте вашу информацию:{info["measure"]} {info["date"]} {info["time"]} {info["level"]} {CustomUser.objects.get(id=info["trainer"]).first_name} {info["max_member"]} {info["link"]}",
                              reply_markup=markup)
     if call.data == "confirm":
