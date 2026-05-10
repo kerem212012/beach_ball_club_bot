@@ -4,4 +4,5 @@ environs==15.0.1
 pyTelegramBotAPI==4.33.0
 phonenumbers==9.0.28
 Pillow
+apscheduler
 gunicorn==26.0.0
