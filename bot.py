@@ -40,8 +40,7 @@ edit_data = {}
 
 env = Env()
 env.read_env()
-group_id=-5244172242
-group_id_2=-1001641728450
+group_id=-1001641728450
 bot = telebot.TeleBot(env.str("TG_TOKEN"))
 scheduler = BackgroundScheduler()
 
