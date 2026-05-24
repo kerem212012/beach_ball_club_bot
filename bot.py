@@ -40,10 +40,11 @@ edit_data = {}
 
 env = Env()
 env.read_env()
-group_id=-1001641728450
+group_id=-1001641728450 #-5244172242 test group
 bot = telebot.TeleBot(env.str("TG_TOKEN"))
 scheduler = BackgroundScheduler()
-
+days = ['Понедельник', 'Вторник', 'Среда', 'Четверг',
+            'Пятница', 'Суббота', 'Воскресенье']
 def menu(message):
     """Отображение главного меню с кнопками навигации.
 
@@ -67,13 +68,22 @@ def menu(message):
 
 
 def create_user(message):
+    if message.chat.id == group_id:
+        return
     if CustomUser.objects.filter(tg_id=message.from_user.id).exists():
         pass
     else:
-        bot.send_message(message.chat.id, f"Правила")
+        bot.send_message(message.chat.id, f"""ПРАВИЛА ОПЛАТЫ:
+
+        ‼️Разовая тренировка оплачивается заранее.
+        ‼️При отмене брони с вашей стороны менее, чем за сутки, вычитается/оплачивается полная стоимость тренировки.
+
+
+        Тренировка состоится при наборе от 4х человек""")
     markup = types.InlineKeyboardMarkup()
+
     CustomUser.objects.update_or_create(tg_id=message.chat.id,defaults={
-		"first_name":message.chat.first_name,
+		"first_name":message.chat.first_name if message.chat.first_name else message.chat.username,
 		"tg_id":message.chat.id,
 
 	})
@@ -228,24 +238,25 @@ def handle_event_steps(message):
             btn = types.InlineKeyboardButton(text=f"{trainer.first_name}", callback_data=f"trainer|{trainer.id}")
             markup.row(btn)
         bot.send_message(user_id, text="Выберите тренера:", reply_markup=markup)
+def add_0(date):
+    return f"0{date}" if len(str(date)) == 1 else date
 
 def info_text(event):
     members_list = Member.objects.filter(event=event).order_by('pos')
     members = "\n".join([f"{m.pos}. {m.member.first_name}" for m in members_list])
-    
     reserved_list = Reserve.objects.filter(event=event).order_by('pos')
     reserved_users = "\n".join([f"{r.pos}. {r.reserve.first_name}" for r in reserved_list])
     if event.members.count() == 0:
-        return f"{event.measure}\n\n📆Дата {event.date.day}/{event.date.month}/{event.date.year}\n⏳Время {event.date.hour}:{event.date.minute}\n📊 Уровень:{event.get_level_display()}\n📍Локация <a href='{event.link}'>{event.place}</a>\n👨‍🏫 Тренер:{event.trainer.first_name}\n\n👥 Участники({event.members.count() + event.reserve.count()}/{event.max_member})\nПока никто не записался\n\n💬 По вопросам стоимости, тренировочного уровня и другим обращаться в лс @allo_litvinova"
+        return f"{event.measure}\n\n📆Дата {add_0(event.date.day)}/{add_0(event.date.month)}/{event.date.year} {days[event.date.weekday()]}\n⏳Время {add_0(event.date.hour)}:{add_0(event.date.minute)}\n📊 Уровень:{event.get_level_display()}\n📍Локация <a href='{event.link}'>{event.place}</a>\n👨‍🏫 Тренер:{event.trainer.first_name}\n\n👥 Участники({event.members.count() + event.reserve.count()}/{event.max_member})\nПока никто не записался\n\n💬 По вопросам стоимости, тренировочного уровня и другим обращаться в лс @allo_litvinova"
 
     elif event.max_member > event.members.count():
-        return f"{event.measure}\n\n📆Дата {event.date.day}/{event.date.month}/{event.date.year}\n⏳Время {event.date.hour}:{event.date.minute}\n📊 Уровень:{event.get_level_display()}\n📍Локация <a href='{event.link}'>{event.place}</a>\n👨‍🏫 Тренер:{event.trainer.first_name}\n\n👥 Участники({event.members.count() + event.reserve.count()}/{event.max_member})\n{members}\n\n💬 По вопросам стоимости, тренировочного уровня и другим обращаться в лс @allo_litvinova"
+        return f"{event.measure}\n\n📆Дата {add_0(event.date.day)}/{add_0(event.date.month)}/{event.date.year} {days[event.date.weekday()]}\n⏳Время {add_0(event.date.hour)}:{add_0(event.date.minute)}\n📊 Уровень:{event.get_level_display()}\n📍Локация <a href='{event.link}'>{event.place}</a>\n👨‍🏫 Тренер:{event.trainer.first_name}\n\n👥 Участники({event.members.count() + event.reserve.count()}/{event.max_member})\n{members}\n\n💬 По вопросам стоимости, тренировочного уровня и другим обращаться в лс @allo_litvinova"
 
     elif event.max_member == event.members.count() + event.reserve.count():
-        return f"{event.measure}\n\n📆Дата {event.date.day}/{event.date.month}/{event.date.year}\n⏳Время {event.date.hour}:{event.date.minute}\n📊 Уровень:{event.get_level_display()}\n📍Локация <a href='{event.link}'>{event.place}</a>\n👨‍🏫 Тренер:{event.trainer.first_name}\n\n👥 Участники({event.members.count() + event.reserve.count()}/{event.max_member})\n{members}\n\n**🔒 Набор закрыт!**\n\n💬 По вопросам стоимости, тренировочного уровня и другим обращаться в лс @allo_litvinova"
+        return f"{event.measure}\n\n📆Дата {add_0(event.date.day)}/{add_0(event.date.month)}/{event.date.year} {days[event.date.weekday()]}\n⏳Время {add_0(event.date.hour)}:{add_0(event.date.minute)}\n📊 Уровень:{event.get_level_display()}\n📍Локация <a href='{event.link}'>{event.place}</a>\n👨‍🏫 Тренер:{event.trainer.first_name}\n\n👥 Участники({event.members.count() + event.reserve.count()}/{event.max_member})\n{members}\n\n**🔒 Набор закрыт!**\n\n💬 По вопросам стоимости, тренировочного уровня и другим обращаться в лс @allo_litvinova"
 
     else:
-        return f"{event.measure}\n\n📆Дата {event.date.day}/{event.date.month}/{event.date.year}\n⏳Время {event.date.hour}:{event.date.minute}\n📊 Уровень:{event.get_level_display()}\n📍Локация <a href='{event.link}'>{event.place}</a>\n👨‍🏫 Тренер:{event.trainer.first_name}\n\n👥 Участники({event.members.count() + event.reserve.count()}/{event.max_member})\n{members}\n\n**🔒 Набор закрыт!**\n\n📋 Резерв (если вы в резерве — приходить не нужно):\n{reserved_users} \n\n💬 По вопросам стоимости, тренировочного уровня и другим обращаться в лс @allo_litvinova"
+        return f"{event.measure}\n\n📆Дата {add_0(event.date.day)}/{add_0(event.date.month)}/{event.date.year} {days[event.date.weekday()]}\n⏳Время {add_0(event.date.hour)}:{add_0(event.date.minute)}\n📊 Уровень:{event.get_level_display()}\n📍Локация <a href='{event.link}'>{event.place}</a>\n👨‍🏫 Тренер:{event.trainer.first_name}\n\n👥 Участники({event.members.count() + event.reserve.count()}/{event.max_member})\n{members}\n\n**🔒 Набор закрыт!**\n\n📋 Резерв (если вы в резерве — приходить не нужно):\n{reserved_users} \n\n💬 По вопросам стоимости, тренировочного уровня и другим обращаться в лс @allo_litvinova"
 
 def send_event_message(event_id,status):
     markup = types.InlineKeyboardMarkup()
@@ -336,10 +347,10 @@ def callback_handler(call):
         user=CustomUser.objects.get(tg_id=call.from_user.id)
         for event in Event.objects.exclude(Q(members=user)|Q(reserve=user)):
             if event.members.count() < event.max_member:
-                btn = types.InlineKeyboardButton(text=f"Информация Дата&Время:📆Дата {event.date.day}/{event.date.month}/{event.date.year}\n⏳Время {event.date.hour}:{event.date.minute} ({event.members.count()+event.reserve.count()}/{event.max_member})", callback_data=f"info|join|{event.id}")
+                btn = types.InlineKeyboardButton(text=f"Информация Дата&Время:📆Дата {add_0(event.date.day)}/{add_0(event.date.month)}/{event.date.year} {days[event.date.weekday()]}\n⏳Время {add_0(event.date.hour)}:{add_0(event.date.minute)} ({event.members.count()+event.reserve.count()}/{event.max_member})", callback_data=f"info|join|{event.id}")
             else:
                 btn = types.InlineKeyboardButton(
-                    text=f"Информация Дата&Время: 📆Дата {event.date.day}/{event.date.month}/{event.date.year}\n⏳Время {event.date.hour}:{event.date.minute} Участники: ({event.members.count()+event.reserve.count()}/{event.max_member})",
+                    text=f"Информация Дата&Время: 📆Дата {add_0(event.date.day)}/{add_0(event.date.month)}/{event.date.year} {days[event.date.weekday()]}\n⏳Время {add_0(event.date.hour)}:{add_0(event.date.minute)} Участники: ({event.members.count()+event.reserve.count()}/{event.max_member})",
                     callback_data=f"info|reserve|{event.id}")
             markup.row(btn)
         back_btn = types.InlineKeyboardButton(text=f"Назад",callback_data="menu")
@@ -360,11 +371,11 @@ def callback_handler(call):
                     Reserve.objects.create(event=event,reserve=user,pos=event.reserve.count()+1)
                     event.reserve.add(user)
                     bot.delete_message(group_id, event.message_id)
-                    bot.send_message(call.from_user.id, f"В РЕЗЕРВЕ\nНа {event.measure}\n📆Дата: {event.date.day}/{event.date.month}/{event.date.year}\n🕰️Время: {event.date.hour}:{event.date.minute}\n📍Локация: <a href='{event.link}'>{event.place}</a>\n👨‍🎓Тренер: {event.trainer.first_name}\nВы записаны в ‼️РЕЗЕРВ‼️\nпри освобождении места на тренировку, Вы автоматически будете добавлены на неё, при этом Вам придёт об этом оповещение 🚨 ", reply_markup=markup,parse_mode="HTML")
+                    bot.send_message(call.from_user.id, f"В РЕЗЕРВЕ\nНа {event.measure}\n📆Дата: {add_0(event.date.day)}/{add_0(event.date.month)}/{event.date.year} {days[event.date.weekday()]}\n⏳Время {add_0(event.date.hour)}:{add_0(event.date.minute)}\n📍Локация: <a href='{event.link}'>{event.place}</a>\n👨‍🎓Тренер: {event.trainer.first_name}\nВы записаны в ‼️РЕЗЕРВ‼️\nпри освобождении места на тренировку, Вы автоматически будете добавлены на неё, при этом Вам придёт об этом оповещение 🚨 ", reply_markup=markup,parse_mode="HTML")
                 else:
                     Member.objects.create(event=event,member=user,pos=event.members.count()+1)
                     event.members.add(user)
-                    bot.send_message(call.from_user.id, f"Вы записаны на {event.measure}\n📆Дата: {event.date.day}/{event.date.month}/{event.date.year}\n🕰️Время: {event.date.hour}:{event.date.minute}\n📍Локация: <a href='{event.link}'>{event.place}</a>\n👨‍🎓Тренер: {event.trainer.first_name}\nНе забудьте с собой форму, головной убор и питьевую воду‼️\nДо встречи на корте 🙌", reply_markup=markup,parse_mode="HTML")
+                    bot.send_message(call.from_user.id, f"Вы записаны на {event.measure}\n📆Дата: {add_0(event.date.day)}/{add_0(event.date.month)}/{event.date.year} {days[event.date.weekday()]}\n⏳Время {add_0(event.date.hour)}:{add_0(event.date.minute)}\n📍Локация: <a href='{event.link}'>{event.place}</a>\n👨‍🎓Тренер: {event.trainer.first_name}\nНе забудьте с собой форму, головной убор и питьевую воду‼️\nДо встречи на корте 🙌", reply_markup=markup,parse_mode="HTML")
                 send_event_message(event.id,"old")
             else:
                 bot.send_message(group_id, f"Вы уже записаны на {event.measure}", reply_markup=markup)
@@ -379,10 +390,10 @@ def callback_handler(call):
         reserved_events = Event.objects.filter(reserve=user)
         events = Event.objects.filter(members=user)
         for event in events:
-            btn = types.InlineKeyboardButton(text=f"Выйти Дата&Время:📆Дата {event.date.day}/{event.date.month}/{event.date.year}\n⏳Время {event.date.hour}:{event.date.minute} ({event.members.count()+event.reserve.count()}/{event.max_member})", callback_data=f"info|leave|{event.id}")
+            btn = types.InlineKeyboardButton(text=f"Выйти Дата&Время:📆Дата {add_0(event.date.day)}/{add_0(event.date.month)}/{event.date.year} {days[event.date.weekday()]}\n⏳Время {add_0(event.date.hour)}:{add_0(event.date.minute)} ({event.members.count()+event.reserve.count()}/{event.max_member})", callback_data=f"info|leave|{event.id}")
             markup.row(btn)
         for event in reserved_events:
-            btn = types.InlineKeyboardButton(text=f"Отменить резерв Дата&Время:📆Дата {event.date.day}/{event.date.month}/{event.date.year}\n⏳Время {event.date.hour}:{event.date.minute} ({event.members.count()+event.reserve.count()}/{event.max_member})", callback_data=f"info|leave|{event.id}")
+            btn = types.InlineKeyboardButton(text=f"Отменить резерв Дата&Время:📆Дата {add_0(event.date.day)}/{add_0(event.date.month)}/{event.date.year} {days[event.date.weekday()]}\n⏳Время {add_0(event.date.hour)}:{add_0(event.date.minute)} ({event.members.count()+event.reserve.count()}/{event.max_member})", callback_data=f"info|leave|{event.id}")
             markup.row(btn)
         back_btn = types.InlineKeyboardButton(text=f"Назад", callback_data="menu")
         markup.row(back_btn)
@@ -425,14 +436,14 @@ def callback_handler(call):
                     Member.objects.create(event=event, member=reserve_1.reserve, pos=event.members.count()+1)
                     event.members.add(reserve_1.reserve)
                     event.reserve.remove(reserve_1.reserve)
-                    bot.send_message(reserve_1.reserve.tg_id, f"«Вы добавлены в основу на {event.measure}\n📆Дата: {event.date.day}/{event.date.month}/{event.date.year}\n🕰️Время: {event.date.hour}:{event.date.minute}\n📍Локация: <a href='{event.link}'>{event.place}</a>\n👨‍🎓Тренер: {event.trainer.first_name}\nНе забудьте с собой форму, головной убор и питьевую воду‼️\nДо встречи на корте 🙌",parse_mode="HTML")
+                    bot.send_message(reserve_1.reserve.tg_id, f"«Вы добавлены в основу на {event.measure}\n📆Дата: {add_0(event.date.day)}/{add_0(event.date.month)}/{event.date.year} {days[event.date.weekday()]}\n⏳Время {add_0(event.date.hour)}:{add_0(event.date.minute)}\n📍Локация: <a href='{event.link}'>{event.place}</a>\n👨‍🎓Тренер: {event.trainer.first_name}\nНе забудьте с собой форму, головной убор и питьевую воду‼️\nДо встречи на корте 🙌",parse_mode="HTML")
                     reserve_1.delete()
                     for reserved in Reserve.objects.filter(event=event):
                         reserved.pos -= 1
                         reserved.save()
                 except Reserve.DoesNotExist:
                     pass
-                bot.send_message(call.from_user.id, f"Вы выписаны с {event.measure}\n📆Дата: {event.date.day}/{event.date.month}/{event.date.year}\n🕰️Время: {event.date.hour}:{event.date.minute}\n📍Локация: <a href='{event.link}'>{event.place}</a>\n👨‍🎓Тренер: {event.trainer.first_name}\nБудем рады видеть Вас на следующей тренировке", reply_markup=markup,parse_mode="HTML")
+                bot.send_message(call.from_user.id, f"Вы выписаны с {event.measure}\n📆Дата: {add_0(event.date.day)}/{add_0(event.date.month)}/{event.date.year} {days[event.date.weekday()]}\n⏳Время {add_0(event.date.hour)}:{add_0(event.date.minute)}\n📍Локация: <a href='{event.link}'>{event.place}</a>\n👨‍🎓Тренер: {event.trainer.first_name}\nБудем рады видеть Вас на следующей тренировке", reply_markup=markup,parse_mode="HTML")
             else:
                 user_reserve=Reserve.objects.get(event=event,reserve=user)
                 other_reserves=Reserve.objects.filter(event=event,pos__gt=user_reserve.pos)
@@ -450,7 +461,7 @@ def callback_handler(call):
     if call.data.split("|")[0] == "select_event":
         markup = types.InlineKeyboardMarkup()
         for event in Event.objects.all():
-            btn = types.InlineKeyboardButton(text=f"Редактировать Дата&Время:📆Дата {event.date.day}/{event.date.month}/{event.date.year}\n⏳Время {event.date.hour}:{event.date.minute} ({event.members.count()+event.reserve.count()}/{event.max_member})", callback_data=f"{call.data.split("|")[1]}|{event.id}")
+            btn = types.InlineKeyboardButton(text=f"Редактировать Дата&Время:📆Дата {add_0(event.date.day)}/{add_0(event.date.month)}/{event.date.year} {days[event.date.weekday()]}\n⏳Время {add_0(event.date.hour)}:{add_0(event.date.minute)} ({event.members.count()+event.reserve.count()}/{event.max_member})", callback_data=f"{call.data.split("|")[1]}|{event.id}")
             markup.row(btn)
         back_btn = types.InlineKeyboardButton(text=f"Назад", callback_data="admin")
         markup.row(back_btn)
@@ -517,14 +528,14 @@ def callback_handler(call):
         event = Event.objects.get(id=call.data.split("|")[1])
         if event.members.exists():
             for member in event.members.all():
-                bot.send_message(member.tg_id, f"{event.measure} \n📆Дата {event.date.day}/{event.date.month}/{event.date.year}\n⏳Время {event.date.hour}:{event.date.minute} отменена:")
+                bot.send_message(member.tg_id, f"{event.measure} \n📆Дата {add_0(event.date.day)}/{add_0(event.date.month)}/{event.date.year} {days[event.date.weekday()]}\n⏳Время {add_0(event.date.hour)}:{add_0(event.date.minute)} отменена:")
             if event.reserve.exists():
                 for reserve in event.reserve.all():
                     Reserve.objects.get(event=event,reserve=reserve).delete()
                     bot.send_message(reserve.tg_id, f"Тренировка [{event.date.day}/{event.date.month}/{event.date.year}, {event.date.hour}:{event.date.minute}, <a href='{event.link}'>{event.place}</a>] у тренера [{event.trainer.first_name}] ОТМЕНЕНА‼️\nПриносим свои извинения",parse_mode="HTML")
         Member.objects.filter(event=event).delete()
         Reserve.objects.filter(event=event).delete()
-        bot.send_message(group_id, f"{event.measure} \n📆Дата {event.date.day}/{event.date.month}/{event.date.year}\n⏳Время {event.date.hour}:{event.date.minute} отменена:")
+        bot.send_message(group_id, f"{event.measure} \n📆Дата {add_0(event.date.day)}/{add_0(event.date.month)}/{event.date.year} {days[event.date.weekday()]}\n⏳Время {add_0(event.date.hour)}:{add_0(event.date.minute)} отменена:")
         bot.delete_message(group_id, event.message_id)
         event.delete()
         back_btn = types.InlineKeyboardButton(text=f"Назад", callback_data="admin")
