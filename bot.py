@@ -378,8 +378,9 @@ def callback_handler(call):
                     bot.send_message(call.from_user.id, f"Вы записаны на {event.measure}\n📆Дата: {add_0(event.date.day)}/{add_0(event.date.month)}/{event.date.year} {days[event.date.weekday()]}\n⏳Время {add_0(event.date.hour)}:{add_0(event.date.minute)}\n📍Локация: <a href='{event.link}'>{event.place}</a>\n👨‍🎓Тренер: {event.trainer.first_name}\nНе забудьте с собой форму, головной убор и питьевую воду‼️\nДо встречи на корте 🙌", reply_markup=markup,parse_mode="HTML")
                 send_event_message(event.id,"old")
             else:
-                bot.send_message(group_id, f"Вы уже записаны на {event.measure}", reply_markup=markup)
-
+                message = bot.send_message(group_id, f"Вы уже записаны на {event.measure}", reply_markup=markup)
+                time.sleep(10)
+                bot.delete_message(group_id, message.message_id)
         else:
             message = bot.send_message(group_id, "Вы не зарегистрированы, перейдите к:@beach_ball_club_bot")
             time.sleep(10)
