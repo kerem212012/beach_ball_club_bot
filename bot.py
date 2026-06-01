@@ -114,7 +114,7 @@ def handle_edit_steps(message):
         message: сообщение Telegram с текстом или фото
     """
     user_id = message.chat.id
-    state = user_state.get(user_id)
+    state = edit_state.get(user_id)
     markup = types.InlineKeyboardMarkup()
     if state == "measure":
         edit_data[user_id]["measure"] = message.text.strip()
