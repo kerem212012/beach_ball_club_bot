@@ -6,3 +6,4 @@ phonenumbers==9.0.28
 Pillow
 apscheduler
 gunicorn==26.0.0
+vk-api

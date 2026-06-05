@@ -40,7 +40,7 @@ edit_data = {}
 
 env = Env()
 env.read_env()
-group_id=-1001641728450 #-5244172242 test group
+group_id=-5244172242 #-5244172242 test group
 bot = telebot.TeleBot(env.str("TG_TOKEN"))
 scheduler = BackgroundScheduler()
 days = ['Понедельник', 'Вторник', 'Среда', 'Четверг',
@@ -164,13 +164,12 @@ def handle_edit_steps(message):
         event_time = info["time"].split(":")
         edit_data[user_id]["date"] = timezone.make_aware(
             datetime(int(date[2]), int(date[1]), int(date[0]), int(event_time[0]), int(event_time[1])))
-        del user_state[user_id]
         confirm_btn = types.InlineKeyboardButton(text="Подтвердить", callback_data="finish_edit|date")
         cancel_btn = types.InlineKeyboardButton(text="Отменить", callback_data="admin")
         markup.row(confirm_btn)
         markup.row(cancel_btn)
         bot.send_message(user_id, text="Выберите:", reply_markup=markup)
-
+    del edit_state[user_id]
 
 
 @bot.message_handler(func=lambda msg: msg.chat.id in user_state, content_types=['photo', 'text'])
@@ -585,26 +584,25 @@ def callback_handler(call):
         markup = types.InlineKeyboardMarkup()
         user_id = call.from_user.id
         info = edit_data[user_id]
-        event = Event.objects.get(info["event_id"])
+        event = Event.objects.get(id=info["event_id"])
         state=call.data.split("|")[1]
         if state == "measure":
-            event.update(measure=info[state])
+            event.measure=info[state]
             event.save()
         elif state == "date":
-            event.update(date=info[state])
+            event.date=info[state]
             event.save()
         elif state == "place":
-            event.update(date=info[state])
+            event.place=info[state]
             event.save()
         elif state == "max_member":
-            event.update(date=info[state])
+            event.max_member=info[state]
             event.save()
         elif state == "link":
-            event.update(date=info[state])
+            event.link=info[state]
             event.save()
         back_btn = types.InlineKeyboardButton(text=f"Назад", callback_data="admin")
         markup.row(back_btn)
         bot.send_message(user_id, text="Редактирование завершено", reply_markup=markup)
-        bot.delete_message(group_id, event.message_id)
         send_event_message(event.id,"old")
 bot.infinity_polling()
