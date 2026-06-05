@@ -303,9 +303,11 @@ def delete_expired_events():
         )
         for event in expired_events:
             for member in event.members.all():
-                bot.send_message(member.tg_id, f"{event.measure} отменена")
+                if member.tg_id:
+                    bot.send_message(member.tg_id, f"{event.measure} отменена")
             for reserve in event.reserve.all():
-                bot.send_message(reserve.tg_id, f"{event.measure} отменена")
+                if reserve.tg_id:
+                    bot.send_message(reserve.tg_id, f"{event.measure} отменена")
             Member.objects.filter(event=event).delete()
             Reserve.objects.filter(event=event).delete()
             bot.delete_message(group_id,event.message_id)
