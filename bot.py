@@ -40,7 +40,7 @@ edit_data = {}
 
 env = Env()
 env.read_env()
-group_id=-5244172242 #-5244172242 test group
+group_id=-1001641728450 #-5244172242 test group
 bot = telebot.TeleBot(env.str("TG_TOKEN"))
 scheduler = BackgroundScheduler()
 days = ['Понедельник', 'Вторник', 'Среда', 'Четверг',
@@ -463,7 +463,12 @@ def callback_handler(call):
     if call.data.split("|")[0] == "select_event":
         markup = types.InlineKeyboardMarkup()
         for event in Event.objects.all():
-            btn = types.InlineKeyboardButton(text=f"Редактировать Дата&Время:📆Дата {add_0(event.date.day)}/{add_0(event.date.month)}/{event.date.year} {days[event.date.weekday()]}\n⏳Время {add_0(event.date.hour)}:{add_0(event.date.minute)} ({event.members.count()+event.reserve.count()}/{event.max_member})", callback_data=f"{call.data.split("|")[1]}|{event.id}")
+            if {call.data.split("|")[1]} == "edit_event":
+                btn = types.InlineKeyboardButton(text=f"Редактировать Дата&Время:📆Дата {add_0(event.date.day)}/{add_0(event.date.month)}/{event.date.year} {days[event.date.weekday()]}\n⏳Время {add_0(event.date.hour)}:{add_0(event.date.minute)} ({event.members.count()+event.reserve.count()}/{event.max_member})", callback_data=f"{call.data.split("|")[1]}|{event.id}")
+            else:
+                btn = types.InlineKeyboardButton(
+                    text=f"Удалить Дата&Время:📆Дата {add_0(event.date.day)}/{add_0(event.date.month)}/{event.date.year} {days[event.date.weekday()]}\n⏳Время {add_0(event.date.hour)}:{add_0(event.date.minute)} ({event.members.count() + event.reserve.count()}/{event.max_member})",
+                    callback_data=f"{call.data.split("|")[1]}|{event.id}")
             markup.row(btn)
         back_btn = types.InlineKeyboardButton(text=f"Назад", callback_data="admin")
         markup.row(back_btn)
