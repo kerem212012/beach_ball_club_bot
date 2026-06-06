@@ -11,7 +11,7 @@ class CustomUserAdmin(admin.ModelAdmin):
     readonly_fields = ['id', 'date_joined', 'last_login']
     fieldsets = (
         ('Personal Information', {
-            'fields': ('id', 'first_name', 'last_name', 'tg_id')
+            'fields': ('id', 'first_name', 'last_name', 'tg_id','vk_id')
         }),
         ('Account', {
             'fields': ('password',)
