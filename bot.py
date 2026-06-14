@@ -3,7 +3,7 @@ import sys
 import time
 from datetime import datetime, timedelta
 
-from django.db.models import Q
+from django.db.models import Q, Count
 from django.utils import timezone
 from telebot import types
 
@@ -299,9 +299,11 @@ def delete_expired_events():
         expired_events=Event.objects.filter(
             date__lte=timezone.now()
         )
-        no_member_events=Event.objects.filter(
+        no_member_events=Event.objects.annotate(
+            member_count=Count('members')
+        ).filter(
             date__lte=timezone.now()+timedelta(days=1),
-            members__lt=4
+            member_count__lt=4
         )
         for event in expired_events:
             for member in event.members.all():
