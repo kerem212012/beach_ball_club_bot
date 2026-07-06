@@ -270,6 +270,7 @@ def send_event_message(event_id,status):
     if status == "old":
         try:
             bot.delete_message(group_id, event.message_id)
+            event.delete(event)
         except ApiTelegramException:
             bot.send_message(380869029, text="Обнаружена ошибка. Обратитесь к разработчику! @chipsinkayt")
 
