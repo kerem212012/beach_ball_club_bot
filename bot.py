@@ -502,7 +502,10 @@ def callback_handler(call):
             markup.row(btn)
         back_btn = types.InlineKeyboardButton(text="Назад", callback_data="admin")
         markup.row(back_btn)
-        bot.send_message(call.from_user.id, "Вы хотите отредактировать тренировку:", reply_markup=markup) #TODO
+        if call.data.split("|")[1] == "edit_event":
+            bot.send_message(call.from_user.id, "Вы хотите отредактировать тренировку:", reply_markup=markup)
+        else:
+            bot.send_message(call.from_user.id, "Вы хотите удалить тренировку:", reply_markup=markup)
     if call.data.split("|")[0] == "edit_event":
         markup = types.InlineKeyboardMarkup()
         measure_btn = types.InlineKeyboardButton(text="Редактировать название",callback_data=f"start_edit|measure|{call.data.split("|")[1]}")
