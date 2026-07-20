@@ -41,7 +41,7 @@ edit_data = {}
 
 env = Env()
 env.read_env()
-group_id=-1001641728450 #-5244172242 test group
+group_id=-5244172242 #-5244172242 test group
 bot = telebot.TeleBot(env.str("TG_TOKEN"))
 scheduler = BackgroundScheduler()
 days = ['Понедельник', 'Вторник', 'Среда', 'Четверг',
@@ -258,6 +258,17 @@ def info_text(event):
     else:
         return f"{event.measure}\n\n📆Дата {add_0(event.date.day)}/{add_0(event.date.month)}/{event.date.year} {days[event.date.weekday()]}\n⏳Время {add_0(event.date.hour)}:{add_0(event.date.minute)}\n📊 Уровень:{event.get_level_display()}\n📍Локация <a href='{event.link}'>{event.place}</a>\n👨‍🏫 Тренер:{event.trainer.first_name}\n\n👥 Участники({event.members.count() + event.reserve.count()}/{event.max_member})\n{members}\n\n**🔒 Набор закрыт!**\n\n📋 Резерв (если вы в резерве — приходить не нужно):\n{reserved_users} \n\n💬 По вопросам стоимости, тренировочного уровня и другим обращаться в лс @allo_litvinova"
 
+def delete_event(event):
+    """Delete an event and its Telegram message safely."""
+    if hasattr(event, 'message_id') and event.message_id:
+        try:
+            bot.delete_message(group_id, event.message_id)
+        except ApiTelegramException as e:
+            if "message to delete not found" not in str(e).lower():
+                bot.send_message(380869029, text=f"Ошибка удаления сообщения события: {e}")
+    event.delete()
+
+
 def send_event_message(event_id,status):
     markup = types.InlineKeyboardMarkup()
     event = Event.objects.get(id=event_id)
@@ -269,16 +280,17 @@ def send_event_message(event_id,status):
     markup.add(btn, leave_btn)
     if status == "old":
         try:
-            bot.delete_message(group_id, event.message_id)
-            event.delete(event)
+            if event.message_id:
+                bot.delete_message(group_id, event.message_id)
         except ApiTelegramException:
             bot.send_message(380869029, text="Обнаружена ошибка. Обратитесь к разработчику! @chipsinkayt")
-
-    else:
-        pass
-    message = bot.send_photo(group_id,photo=event.photo, caption=info_text(event), reply_markup=markup,parse_mode="HTML")
-    event.message_id = message.message_id
-    event.save()
+    elif status == "delete":
+        delete_event(event)
+        return
+    if event:
+        message = bot.send_photo(group_id,photo=event.photo, caption=info_text(event), reply_markup=markup,parse_mode="HTML")
+        event.message_id = message.message_id
+        event.save()
 
 
 def send_daily_training():
@@ -319,12 +331,7 @@ def delete_expired_events():
                             bot.send_message(reserve.tg_id, f"{event.measure} отменена")
                     Member.objects.filter(event=event).delete()
                     Reserve.objects.filter(event=event).delete()
-                    if hasattr(event, 'message_id') and event.message_id:
-                        try:
-                            bot.delete_message(group_id, event.message_id)
-                        except Exception as e:
-                            print(f"Error deleting message {event.message_id}: {e}")
-                    event.delete()
+                    delete_event(event)
                 except Exception as e:
                     print(f"Error processing expired event {event.id}: {e}")
             
@@ -335,12 +342,7 @@ def delete_expired_events():
                             bot.send_message(member.tg_id, f"{event.measure} отменена - недостаточно участников")
                     Member.objects.filter(event=event).delete()
                     Reserve.objects.filter(event=event).delete()
-                    if hasattr(event, 'message_id') and event.message_id:
-                        try:
-                            bot.delete_message(group_id, event.message_id)
-                        except Exception as e:
-                            print(f"Error deleting message {event.message_id}: {e}")
-                    event.delete()
+                    delete_event(event)
                 except Exception as e:
                     print(f"Error processing no-member event {event.id}: {e}")
         except Exception as e:
@@ -493,14 +495,14 @@ def callback_handler(call):
         for event in Event.objects.all():
             if call.data.split("|")[1] == "edit_event":
                 btn = types.InlineKeyboardButton(text=f"Редактировать Дата&Время:📆Дата {add_0(event.date.day)}/{add_0(event.date.month)}/{event.date.year} {days[event.date.weekday()]}\n⏳Время {add_0(event.date.hour)}:{add_0(event.date.minute)} ({event.members.count()+event.reserve.count()}/{event.max_member})", callback_data=f"{call.data.split("|")[1]}|{event.id}")
-            else:
+            elif call.data.split("|")[1] == "cancel_event":
                 btn = types.InlineKeyboardButton(
                     text=f"Удалить Дата&Время:📆Дата {add_0(event.date.day)}/{add_0(event.date.month)}/{event.date.year} {days[event.date.weekday()]}\n⏳Время {add_0(event.date.hour)}:{add_0(event.date.minute)} ({event.members.count() + event.reserve.count()}/{event.max_member})",
                     callback_data=f"{call.data.split("|")[1]}|{event.id}")
             markup.row(btn)
         back_btn = types.InlineKeyboardButton(text="Назад", callback_data="admin")
         markup.row(back_btn)
-        bot.send_message(call.from_user.id, "Вы хотите отредактировать тренировку:", reply_markup=markup)
+        bot.send_message(call.from_user.id, "Вы хотите отредактировать тренировку:", reply_markup=markup) #TODO
     if call.data.split("|")[0] == "edit_event":
         markup = types.InlineKeyboardMarkup()
         measure_btn = types.InlineKeyboardButton(text="Редактировать название",callback_data=f"start_edit|measure|{call.data.split("|")[1]}")
@@ -573,8 +575,7 @@ def callback_handler(call):
         Member.objects.filter(event=event).delete()
         Reserve.objects.filter(event=event).delete()
         bot.send_message(group_id, f"{event.measure} \n📆Дата {add_0(event.date.day)}/{add_0(event.date.month)}/{event.date.year} {days[event.date.weekday()]}\n⏳Время {add_0(event.date.hour)}:{add_0(event.date.minute)} отменена:")
-        bot.delete_message(group_id, event.message_id)
-        event.delete()
+        delete_event(event)
         back_btn = types.InlineKeyboardButton(text="Назад", callback_data="admin")
         markup.row(back_btn)
         bot.send_message(call.from_user.id, "удаление завершено:", reply_markup=markup)
