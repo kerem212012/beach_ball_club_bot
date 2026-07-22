@@ -41,7 +41,7 @@ edit_data = {}
 
 env = Env()
 env.read_env()
-group_id = env.int("TG_GROUP_ID", default=-100164172845)  # override in .env for production
+group_id = env.int("TG_GROUP_ID", default=-1001641728450)  # override in .env for production
 bot = telebot.TeleBot(env.str("TG_TOKEN"))
 scheduler = BackgroundScheduler()
 days = ['Понедельник', 'Вторник', 'Среда', 'Четверг',
