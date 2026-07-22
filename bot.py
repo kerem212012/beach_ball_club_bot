@@ -41,7 +41,7 @@ edit_data = {}
 
 env = Env()
 env.read_env()
-group_id=-100164172845 #-5244172242 test group
+group_id = env.int("TG_GROUP_ID", default=-100164172845)  # override in .env for production
 bot = telebot.TeleBot(env.str("TG_TOKEN"))
 scheduler = BackgroundScheduler()
 days = ['Понедельник', 'Вторник', 'Среда', 'Четверг',
@@ -295,9 +295,18 @@ def send_event_message(event_id,status):
         delete_event(event)
         return
     if event:
-        message = bot.send_photo(group_id,photo=event.photo, caption=info_text(event), reply_markup=markup,parse_mode="HTML")
-        event.message_id = message.message_id
-        event.save()
+        try:
+            message = bot.send_photo(group_id, photo=event.photo, caption=info_text(event), reply_markup=markup, parse_mode="HTML")
+            event.message_id = message.message_id
+            event.save()
+        except ApiTelegramException as e:
+            error_text = str(e)
+            if "chat not found" in error_text.lower():
+                bot.send_message(380869029, text=f"Ошибка отправки события в группу {group_id}: {error_text}")
+            else:
+                bot.send_message(380869029, text=f"Ошибка отправки события: {error_text}")
+        except Exception as e:
+            bot.send_message(380869029, text=f"Unexpected error отправки события: {e}")
 
 
 def send_daily_training():
