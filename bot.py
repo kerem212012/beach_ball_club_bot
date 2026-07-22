@@ -207,11 +207,18 @@ def handle_event_steps(message):
             bot.send_message(user_id, text="Это не ссылка. Вставьте ссылку:")
             user_state[user_id] = "link"
     elif state == "max_member":
-        if int(message.text.strip()) < 4:
+        try:
+            max_member_value = int(message.text.strip())
+        except ValueError:
+            bot.send_message(user_id, text="Введите число для максимального количества участников:")
+            user_state[user_id] = "max_member"
+            return
+
+        if max_member_value < 4:
             bot.send_message(user_id, text="Максимум участников не может быть менее 4:")
             user_state[user_id] = "max_member"
         else:
-            user_data[user_id]["max_member"] = message.text.strip()
+            user_data[user_id]["max_member"] = max_member_value
             user_state[user_id] = "photo"
             bot.send_message(user_id, text="Прикрепите картинку:")
     elif state == "photo":
@@ -607,16 +614,55 @@ def callback_handler(call):
     if call.data == "confirm":
         markup = types.InlineKeyboardMarkup()
         user_id = call.from_user.id
-        info = user_data[user_id]
-        date = info["date"].split("/")
-        event_time = info["time"].split(":")
-        final_date = timezone.make_aware(datetime(int(date[2]), int(date[1]), int(date[0]), int(event_time[0]), int(event_time[1])))
-        trainer = CustomUser.objects.get(id=info["trainer"])
-        event = Event.objects.create(photo=info["photo"],measure=info["measure"],date=final_date, level=next((s for s in Event.StatusChoice if s.label == info["level"]), None), place=info["place"], trainer=trainer, max_member=info["max_member"],link=info["link"])
+        info = user_data.get(user_id)
+        if not info:
+            bot.send_message(user_id, text="Ошибка: данные тренировки не найдены. Начните заново.", reply_markup=markup)
+            return
+
+        if "photo" not in info:
+            bot.send_message(user_id, text="Ошибка: фотография тренировки не найдена. Начните заново.", reply_markup=markup)
+            return
+
+        try:
+            date = info["date"].split("/")
+            event_time = info["time"].split(":")
+            final_date = timezone.make_aware(datetime(int(date[2]), int(date[1]), int(date[0]), int(event_time[0]), int(event_time[1])))
+        except Exception:
+            bot.send_message(user_id, text="Ошибка: неверный формат даты или времени. Начните заново.", reply_markup=markup)
+            return
+
+        trainer = None
+        try:
+            trainer = CustomUser.objects.get(id=info["trainer"])
+        except CustomUser.DoesNotExist:
+            bot.send_message(user_id, text="Ошибка: тренер не найден. Начните заново.", reply_markup=markup)
+            return
+
+        level_choice = next((s for s in Event.StatusChoice if s.label == info.get("level")), None)
+        if level_choice is None:
+            bot.send_message(user_id, text="Ошибка: уровень тренировки не выбран. Начните заново.", reply_markup=markup)
+            return
+
+        try:
+            event = Event.objects.create(
+                photo=info["photo"],
+                measure=info["measure"],
+                date=final_date,
+                level=level_choice,
+                place=info["place"],
+                trainer=trainer,
+                max_member=info["max_member"],
+                link=info["link"],
+            )
+        except Exception as e:
+            bot.send_message(user_id, text=f"Ошибка при создании тренировки: {e}", reply_markup=markup)
+            return
+
+        user_data.pop(user_id, None)
         back_btn = types.InlineKeyboardButton(text="Назад", callback_data="admin")
         markup.row(back_btn)
-        send_event_message(event.id,"new")
-        bot.send_message(user_id, text="Добавление тренировки завершено",reply_markup=markup)
+        send_event_message(event.id, "new")
+        bot.send_message(user_id, text="Добавление тренировки завершено", reply_markup=markup)
     if call.data.split("|")[0] == "start_edit":
         start_editing_event(call.from_user.id,call.data.split("|")[1],call.data.split("|")[2])
     if call.data.split("|")[0] == "finish_edit":
