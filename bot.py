@@ -334,6 +334,7 @@ def delete_expired_events():
             no_member_events=Event.objects.annotate(
                 member_count=Count('members')
             ).filter(
+                date__gt=timezone.now(),
                 date__lte=timezone.now()+timedelta(days=1),
                 member_count__lt=4
             )
