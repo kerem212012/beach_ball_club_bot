@@ -335,7 +335,7 @@ def delete_expired_events():
                 member_count=Count('members')
             ).filter(
                 date__gt=timezone.now(),
-                date__lte=timezone.now()+timedelta(days=1),
+                date__lte=timezone.now()+timedelta(hours=1),
                 member_count__lt=4
             )
             for event in expired_events:
