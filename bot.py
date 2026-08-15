@@ -46,6 +46,36 @@ bot = telebot.TeleBot(env.str("TG_TOKEN"))
 scheduler = BackgroundScheduler()
 days = ['Понедельник', 'Вторник', 'Среда', 'Четверг',
             'Пятница', 'Суббота', 'Воскресенье']
+
+
+def safe_delete_message(chat_id, message_id):
+    """Safely delete a Telegram message, ignoring common errors.
+    
+    Args:
+        chat_id: Telegram chat ID
+        message_id: Message ID to delete
+    
+    Returns:
+        bool: True if deleted successfully, False otherwise
+    """
+    try:
+        bot.delete_message(chat_id, message_id)
+        return True
+    except ApiTelegramException as e:
+        error_msg = str(e).lower()
+        # Don't log errors for expected cases
+        if "message to delete not found" in error_msg or "message can't be deleted" in error_msg:
+            # Messages older than 48 hours or already deleted - this is expected
+            return False
+        else:
+            # Log unexpected errors
+            print(f"[{datetime.now()}] ⚠️ Error deleting message {message_id}: {e}")
+            return False
+    except Exception as e:
+        print(f"[{datetime.now()}] ❌ Unexpected error deleting message {message_id}: {type(e).__name__}: {e}")
+        return False
+
+
 def menu(message):
     """Отображение главного меню с кнопками навигации.
 
@@ -268,11 +298,7 @@ def info_text(event):
 def delete_event(event):
     """Delete an event and its Telegram message safely."""
     if hasattr(event, 'message_id') and event.message_id:
-        try:
-            bot.delete_message(group_id, event.message_id)
-        except ApiTelegramException as e:
-            if "message to delete not found" not in str(e).lower():
-                bot.send_message(380869029, text=f"Ошибка удаления сообщения события: {e}")
+        safe_delete_message(group_id, event.message_id)
     event.delete()
 
 
@@ -286,11 +312,8 @@ def send_event_message(event_id,status):
         btn = types.InlineKeyboardButton(text="Резерв", callback_data=f"join|reserve|{event.id}")
     markup.add(btn, leave_btn)
     if status == "old":
-        try:
-            if event.message_id:
-                bot.delete_message(group_id, event.message_id)
-        except ApiTelegramException:
-            bot.send_message(380869029, text="Обнаружена ошибка. Обратитесь к разработчику! @chipsinkayt")
+        if event.message_id:
+            safe_delete_message(group_id, event.message_id)
     elif status == "delete":
         delete_event(event)
         return
@@ -428,11 +451,11 @@ def callback_handler(call):
             else:
                 message = bot.send_message(group_id, f"Вы уже записаны на {event.measure}", reply_markup=markup)
                 time.sleep(10)
-                bot.delete_message(group_id, message.message_id)
+                safe_delete_message(group_id, message.message_id)
         else:
             message = bot.send_message(group_id, "Вы не зарегистрированы, перейдите к:@beach_ball_club_bot")
             time.sleep(10)
-            bot.delete_message(group_id, message.message_id)
+            safe_delete_message(group_id, message.message_id)
     if call.data == "my_events":
         markup = types.InlineKeyboardMarkup()
         user = CustomUser.objects.get(tg_id=call.from_user.id)
@@ -506,7 +529,7 @@ def callback_handler(call):
         else:
             message = bot.send_message(group_id, "Вы не записаны на эту тренировку")
             time.sleep(10)
-            bot.delete_message(group_id, message.message_id)
+            safe_delete_message(group_id, message.message_id)
     if call.data.split("|")[0] == "select_event":
         markup = types.InlineKeyboardMarkup()
         for event in Event.objects.all():
@@ -559,7 +582,7 @@ def callback_handler(call):
         back_btn = types.InlineKeyboardButton(text="Назад", callback_data="admin")
         markup.row(back_btn)
         bot.send_message(call.from_user.id, "редактирование завершено:", reply_markup=markup)
-        bot.delete_message(group_id, event.message_id)
+        safe_delete_message(group_id, event.message_id)
         send_event_message(event.id,"old")
     if call.data.split("|")[0] == "edit_trainer":
         markup = types.InlineKeyboardMarkup()
@@ -578,7 +601,7 @@ def callback_handler(call):
         back_btn = types.InlineKeyboardButton(text="Назад", callback_data="admin")
         markup.row(back_btn)
         bot.send_message(call.from_user.id, "редактирование завершено:", reply_markup=markup)
-        bot.delete_message(group_id, event.message_id)
+        safe_delete_message(group_id, event.message_id)
         send_event_message(event.id,"old")
     if call.data.split("|")[0] == "cancel_event":
         markup = types.InlineKeyboardMarkup()
