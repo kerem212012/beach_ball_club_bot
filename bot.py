@@ -244,7 +244,7 @@ def handle_event_steps(message):
             user_state[user_id] = "max_member"
             return
 
-        if max_member_value < 4:
+        if max_member_value < 1:
             bot.send_message(user_id, text="Максимум участников не может быть менее 4:")
             user_state[user_id] = "max_member"
         else:
@@ -486,6 +486,7 @@ def callback_handler(call):
         markup.row(back_btn)
         bot.send_message(call.from_user.id, info_text(event), reply_markup=markup,parse_mode="HTML")
     if call.data.split("|")[0] == "leave":
+        bot.answer_callback_query(call.id)
         markup = types.InlineKeyboardMarkup()
         event = Event.objects.get(id=call.data.split("|")[1])
         user = CustomUser.objects.get(tg_id=call.from_user.id)
@@ -493,15 +494,14 @@ def callback_handler(call):
         markup.row(back_btn)
         if event.members.filter(id=user.id).exists() or event.reserve.filter(id=user.id).exists():
             if event.members.filter(id=user.id).exists():
-                # Remove member and delete Member record
-                user_member = Member.objects.get(event=event, member=user)
-                other_members = Member.objects.filter(event=event, pos__gt=user_member.pos)
-                user_member.delete()
+                user_member = Member.objects.filter(event=event, member=user).order_by("pos").first()
+                if user_member:
+                    other_members = Member.objects.filter(event=event, pos__gt=user_member.pos)
+                    user_member.delete()
+                    for member in other_members:
+                        member.pos -= 1
+                        member.save()
                 event.members.remove(user)
-                # Update positions of remaining members
-                for member in other_members:
-                    member.pos -= 1
-                    member.save()
 
                 try:
                     reserve_1 = Reserve.objects.get(event=event,pos=1)
@@ -517,19 +517,18 @@ def callback_handler(call):
                     pass
                 bot.send_message(call.from_user.id, f"Вы выписаны с {event.measure}\n📆Дата: {add_0(event.date.day)}/{add_0(event.date.month)}/{event.date.year} {days[event.date.weekday()]}\n⏳Время {add_0(event.date.hour)}:{add_0(event.date.minute)}\n📍Локация: <a href='{event.link}'>{event.place}</a>\n👨‍🎓Тренер: {event.trainer.first_name}\nБудем рады видеть Вас на следующей тренировке", reply_markup=markup,parse_mode="HTML")
             else:
-                user_reserve=Reserve.objects.get(event=event,reserve=user)
-                other_reserves=Reserve.objects.filter(event=event,pos__gt=user_reserve.pos)
-                user_reserve.delete()
+                user_reserve = Reserve.objects.filter(event=event, reserve=user).order_by("pos").first()
+                if user_reserve:
+                    other_reserves = Reserve.objects.filter(event=event, pos__gt=user_reserve.pos)
+                    user_reserve.delete()
+                    for reserve in other_reserves:
+                        reserve.pos -= 1
+                        reserve.save()
                 event.reserve.remove(user)
-                for reserve in other_reserves:
-                    reserve.pos -= 1
-                    reserve.save()
                 bot.send_message(call.from_user.id, f"Вы отменили свой резерв с {event.measure}", reply_markup=markup)
             send_event_message(event.id,"old")
         else:
-            message = bot.send_message(group_id, "Вы не записаны на эту тренировку")
-            time.sleep(10)
-            safe_delete_message(group_id, message.message_id)
+            bot.send_message(call.from_user.id, "Вы не записаны на эту тренировку", reply_markup=markup)
     if call.data.split("|")[0] == "select_event":
         markup = types.InlineKeyboardMarkup()
         for event in Event.objects.all():
